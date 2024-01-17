@@ -1,0 +1,7 @@
+goal_mode: 
+
+  MANUAL: 0              #white 
+  AUTONOMOUS: 5         #yellow
+  IN_GOAL: 3             #green
+  MISSION_COMPLETED: 6   #orange
+  EMERGENCY: 2           #red
