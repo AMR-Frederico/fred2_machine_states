@@ -1,0 +1,7 @@
+launch: 
+
+- node: 
+    pkg: fred2_machine_states
+    exec: robot_states.py 
+    name: goal_mode
+    namespace: machine_states
