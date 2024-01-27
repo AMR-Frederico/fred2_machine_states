@@ -11,6 +11,8 @@ from rclpy.context import Context
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.node import Node
 from rclpy.parameter import Parameter
+from rcl_interfaces.msg import SetParametersResult
+
 
 from std_msgs.msg import Bool, Int16
 
@@ -121,6 +123,34 @@ class Fred_state(Node):
         self.robotState_pub = self.create_publisher(Int16, 'robot_state', 10)
 
 
+        self.add_on_set_parameters_callback(self.parameters_callback)
+
+    
+    def parameters_callback(self, params):
+        
+        for param in params:
+            self.get_logger().info(f"Parameter '{param.name}' changed to: {param.value}")
+
+            if param.name == 'manual':
+                self.MANUAL = param.value
+
+            elif param.name == 'autonomous':
+                self.AUTONOMOUS = param.value
+
+            elif param.name == 'in_goal':
+                self.IN_GOAL = param.value
+
+            elif param.name == 'mission_completed':
+                self.MISSION_COMPLETED = param.value
+
+            elif param.name == 'emergency':
+                self.EMERGENCY = param.value
+
+        return SetParametersResult(successful=True)
+
+
+
+
     def reset_callback(self, reset):
         
         self.reset_robot_state = reset.data
@@ -226,6 +256,7 @@ class Fred_state(Node):
 
         self.robot_state_msg.data = self.robot_state
         self.robotState_pub.publish(self.robot_state_msg)
+
 
 
         if debug_mode: 
