@@ -19,7 +19,7 @@ from std_msgs.msg import Bool, Int16
 
 # Parameters file (yaml)
 node_path = '~/ros2_ws/src/fred2_machine_states/config/params.yaml'
-node_group = 'goal_mode'
+node_group = 'main_robot'
 
 
 debug_mode = '--debug' in sys.argv
@@ -53,24 +53,22 @@ class Fred_state(Node):
                          allow_undeclared_parameters=allow_undeclared_parameters,
                          automatically_declare_parameters_from_overrides=automatically_declare_parameters_from_overrides)
 
-        # robot mode (MANUAL | AUTONOMOUS)  # robot state (EMERGENCY | IN GOAL | MISSION COMPLETED | MANUAL | AUTONOMOUS)
-        self.robot_state = 2    # Starts in EMERGENCY state 
-        self.robot_mode = 0     # Starts in MANUAL mode 
+
 
         self.last_change_mode = False
         self.switch_mode = False
 
-        self.joy_connected = False      # For safety, assume that the joy isn't connected 
-
-        self.collision_alert = False
-        self.abort_command = True       # For safety the robot, the user must unlock the robot
+        self.robot_safety = False
 
         self.completed_course = False
-        self.goal_reached = False
 
         self.reset_robot_state = False
 
         self.robot_state_msg = Int16()
+
+        self.last_goal_reached = False
+        self.goal_reached = False
+        self.robot_in_goal = False
 
 
         self.load_params(node_path, node_group)
@@ -85,20 +83,8 @@ class Fred_state(Node):
 
 
         self.create_subscription(Bool,
-                                 '/joy/controler/connected',
-                                 self.joyConnectec_callback,
-                                 1)
-
-
-        self.create_subscription(Bool,
-                                 '/safety/abort/user_command',
-                                 self.abortCommand_callback,
-                                 1)
-
-
-        self.create_subscription(Bool,
-                                 '/safety/abort/collision_alert',
-                                 self.collisionDetection_callback,
+                                 '/robot_safety',
+                                 self.robotSafety_callback,
                                  1)
 
 
@@ -157,9 +143,22 @@ class Fred_state(Node):
 
 
 
+
     def goalReached_callback(self, goal):
         
-        self.goal_reached = goal.data
+        
+        if goal.data and not self.last_goal_reached:
+            
+            self.robot_in_goal = True
+
+        
+        else:
+            self.robot_in_goal = False
+
+
+        self.last_goal_reached = goal.data
+
+
 
 
 
@@ -170,24 +169,9 @@ class Fred_state(Node):
 
 
 
-    def collisionDetection_callback(self, collision):
+    def robotSafety_callback(self, status):
         
-        self.collision_alert = collision.data
-
-
-
-
-    def abortCommand_callback(self, abort):
-        
-        self.abort_command = abort.data
-
-
-
-
-    def joyConnectec_callback(self, joy_status):
-        
-        self.joy_connected = joy_status.data
-
+        self.robot_safety = status.data
 
 
 
@@ -217,9 +201,9 @@ class Fred_state(Node):
 
     def machine_states(self):
         
-
-        if not(self.joy_connected) or self.abort_command or self.collision_alert:
-
+        
+        if not self.robot_safety:
+            
             self.robot_state = self.EMERGENCY
 
 
@@ -232,9 +216,10 @@ class Fred_state(Node):
 
 
 
-                if self.goal_reached: 
+                if self.robot_in_goal: 
                     
                     self.robot_state = self.IN_GOAL
+
 
                 
                 if self.completed_course: 
@@ -261,8 +246,7 @@ class Fred_state(Node):
 
         if debug_mode: 
             
-            self.get_logger().info(f"Robot State: {self.robot_state_msg}\n")
-            self.get_logger().info(f"\nGoal Reached: {self.goal_reached} | Mission Completed: {self.completed_course} | Reset: {self.reset_robot_state} | Joy connected: {self.joy_connected} | Abort: {self.abort_command} | Collision: {self.collision_alert}")
+            self.get_logger().info(f"Robot State: {self.robot_state} | Goal Reached: {self.goal_reached} | Mission Completed: {self.completed_course} | Reset: {self.reset_robot_state} | Robot safety: {self.robot_safety}\n")
 
         
         
@@ -285,11 +269,18 @@ class Fred_state(Node):
 
 
     def get_params(self):
+        
         self.MANUAL = self.get_parameter('manual').value
         self.AUTONOMOUS = self.get_parameter('autonomous').value
         self.IN_GOAL = self.get_parameter('in_goal').value
         self.MISSION_COMPLETED = self.get_parameter('mission_completed').value
         self.EMERGENCY = self.get_parameter('emergency').value
+
+
+        # robot mode (MANUAL | AUTONOMOUS)  # robot state (EMERGENCY | IN GOAL | MISSION COMPLETED | MANUAL | AUTONOMOUS)
+        self.robot_state = self.EMERGENCY    # Starts in EMERGENCY state 
+        self.robot_mode = self.MANUAL     # Starts in MANUAL mode 
+
 
 
 
@@ -302,7 +293,7 @@ if __name__ == '__main__':
     states_context.use_real_time = True
 
     node = Fred_state(
-        node_name='goal_mode',
+        node_name='main_robot',
         cli_args='--debug',
         context=states_context,
         namespace='machine_states',
