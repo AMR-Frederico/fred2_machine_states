@@ -217,6 +217,8 @@ class Fred_state(Node):
 
 
                 if self.robot_in_goal: 
+
+                    self.get_logger().warn('ROBOT IN GOAL')
                     
                     self.robot_state = self.IN_GOAL
 
@@ -225,6 +227,8 @@ class Fred_state(Node):
                 if self.completed_course: 
                     
                     self.robot_state = self.MISSION_COMPLETED
+                    
+                    self.get_logger().warn('MISSION COMPLETED')
             
 
 
@@ -237,6 +241,7 @@ class Fred_state(Node):
             if self.reset_robot_state: 
                                 
                 self.robot_mode = self.MANUAL
+                self.robot_state = self.MANUAL
 
 
         self.robot_state_msg.data = self.robot_state
@@ -246,7 +251,7 @@ class Fred_state(Node):
 
         if debug_mode: 
             
-            self.get_logger().info(f"Robot State: {self.robot_state} | Goal Reached: {self.goal_reached} | Mission Completed: {self.completed_course} | Reset: {self.reset_robot_state} | Robot safety: {self.robot_safety}\n")
+            self.get_logger().info(f"Robot State: {self.robot_state} | Goal Reached: {self.last_goal_reached} | Mission Completed: {self.completed_course} | Reset: {self.reset_robot_state} | Robot safety: {self.robot_safety}\n")
 
         
         
