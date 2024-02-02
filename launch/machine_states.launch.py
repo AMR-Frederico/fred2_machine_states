@@ -3,6 +3,7 @@ import launch_ros.descriptions
 
 from launch import LaunchDescription
 from launch_ros.actions import Node
+from launch.actions import TimerAction, LogInfo
 
 
 def generate_launch_description():
@@ -19,6 +20,9 @@ def generate_launch_description():
 
     return LaunchDescription([
 
-        robot_states_node
-
+        TimerAction(period= 1.5, actions= [
+            
+            LogInfo(msg=' ######################### LAUNCHING MACHINE STATES #################################### '), 
+            robot_states_node
+        ])
     ])
