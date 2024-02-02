@@ -7,12 +7,14 @@ import sys
 import os
 
 from typing import List
+
 from rclpy.context import Context
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.node import Node
 from rclpy.parameter import Parameter
-from rcl_interfaces.msg import SetParametersResult
+from rclpy.qos import QoSPresetProfiles, QoSProfile, QoSHistoryPolicy, QoSLivelinessPolicy, QoSReliabilityPolicy, QoSDurabilityPolicy
 
+from rcl_interfaces.msg import SetParametersResult
 
 from std_msgs.msg import Bool, Int16
 
@@ -54,6 +56,15 @@ class Fred_state(Node):
                          automatically_declare_parameters_from_overrides=automatically_declare_parameters_from_overrides)
 
 
+        # quality protocol -> the node must not lose any message 
+        qos_profile = QoSProfile(
+            reliability=QoSReliabilityPolicy.RELIABLE, 
+            durability= QoSDurabilityPolicy.TRANSIENT_LOCAL,
+            history=QoSHistoryPolicy.KEEP_LAST, 
+            depth=10, 
+            liveliness=QoSLivelinessPolicy.AUTOMATIC
+            
+        )
 
         self.last_change_mode = False
         self.switch_mode = False
@@ -79,31 +90,31 @@ class Fred_state(Node):
         self.create_subscription(Bool,
                                  '/joy/machine_states/switch_mode',
                                  self.switchMode_callback,
-                                 1)
+                                 qos_profile)
 
 
         self.create_subscription(Bool,
                                  '/robot_safety',
                                  self.robotSafety_callback,
-                                 1)
+                                 qos_profile)
 
 
         self.create_subscription(Bool,
                                  '/goal_manager/goal/mission_completed',
                                  self.missionCompleted_callback,
-                                 1)
+                                 5)
 
 
         self.create_subscription(Bool,
                                  '/goal_manager/goal/reached',
                                  self.goalReached_callback,
-                                 1)
+                                 qos_profile)
 
 
         self.create_subscription(Bool,
                                  '/odom/reset',
                                  self.reset_callback,
-                                 1)
+                                 qos_profile)
 
 
         self.robotState_pub = self.create_publisher(Int16, 'robot_state', 10)
