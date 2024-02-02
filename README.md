@@ -40,32 +40,29 @@ The goal_mode.py node is the core component of the fred2_machine_states package.
 
 **Type:** `python` 
 
-**Name:** `goal mode`
+**Name:** `main_robot`
 
 **Namespace:** `machine_states`
 
 
 ### Parameters: 
 
-`MANUAL`: index for manual mode
+`MANUAL`: index state for manual mode
 
-`AUTONOMOUS`: index for autonomous mode
+`AUTONOMOUS`: index state for autonomous mode
 
-`IN_GOAL`: state when the robot reaches the goal 
+`IN_GOAL`: index state when the robot reaches the goal 
 
-`MISSION_COMPLETED`: state when the robot finished the course
+`MISSION_COMPLETED`: index state when the robot finished the course
 
-`EMERGENCY`: state when the robot cannot receive speed commands
+`EMERGENCY`: index state when the robot cannot receive speed commands
+
 
 ### Subscribers
 
-- `/joy/machine_states/switch_mode`	(*std_msgs/Bool*): Switch between MANUAL and AUTONOMOUS modes.
+- `/joy/machine_states/switch_mode`	(*std_msgs/Bool*): Switch between `MANUAL` and `AUTONOMOUS` mode.
 
-- `/joy/controler/connected` (*std_msgs/Bool*): Joystick connectivity status.
-
-- `/safety/abort/user_command` (*std_msgs/Bool*): Abort command for safety.
-
-- `/safety/abort/collision_alert`	(*std_msgs/Bool*): Collision detection status.
+- `/robot_safety` (*std_msgs/Bool*): Robot safety status, returns `True` when the robot is safe, and `False` when the robot is blocked by `safe twist node`
 
 - `/goal_manager/goal/mission_completed` (*std_msgs/Bool*): Status of mission completion.
 
@@ -75,9 +72,12 @@ The goal_mode.py node is the core component of the fred2_machine_states package.
 
 </br>
 
+
+
+
 ### Publishers:
 
-- `/machine_states/goal_mode/robot_state` (*std_msgs/Int16*): Current robot state
+- `/machine_states/robot_state` (*std_msgs/Int16*): Current robot state
 
 --- 
 
@@ -94,3 +94,16 @@ ros2 run fred2_machine_states robot_states.py
 ros2 run fred2_machine_states robot_states.py --debug
 ```
 ---
+
+### Launch
+
+**Default:**
+```
+ros2 launch fred2_machine_states machine_states.launch.py 
+```
+
+
+
+
+---
+
