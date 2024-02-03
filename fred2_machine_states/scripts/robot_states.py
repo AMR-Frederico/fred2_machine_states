@@ -59,7 +59,7 @@ class Fred_state(Node):
         # quality protocol -> the node must not lose any message 
         qos_profile = QoSProfile(
             reliability=QoSReliabilityPolicy.RELIABLE, 
-            durability= QoSDurabilityPolicy.TRANSIENT_LOCAL,
+            durability= QoSDurabilityPolicy.VOLATILE,
             history=QoSHistoryPolicy.KEEP_LAST, 
             depth=10, 
             liveliness=QoSLivelinessPolicy.AUTOMATIC
@@ -117,7 +117,7 @@ class Fred_state(Node):
                                  qos_profile)
 
 
-        self.robotState_pub = self.create_publisher(Int16, 'robot_state', 10)
+        self.robotState_pub = self.create_publisher(Int16, 'robot_state', qos_profile)
 
 
         self.add_on_set_parameters_callback(self.parameters_callback)
