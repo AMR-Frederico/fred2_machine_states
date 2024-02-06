@@ -3,15 +3,30 @@
 <package format="3">
   <name>fred2_machine_states</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>The fred2_machine_states package in ROS 2 is designed to manage various states of a robot, focusing on modes like MANUAL and AUTONOMOUS. The primary node, goal_mode.py, monitors joystick connectivity, collision alerts, and other safety parameters to determine the robot's state.</description>
   <maintainer email="leticiarp2000@hotmail.com">ubuntu</maintainer>
-  <license>TODO: License declaration</license>
+  <license>MIT</license>
+
 
   <buildtool_depend>ament_cmake</buildtool_depend>
+
+
+
+  <build_depend>rclpy</build_depend>
+  <build_depend>rcl_interfaces</build_depend>
+  <build_depend>std_msgs</build_depend>
+
+
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>rcl_interfaces</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 
+  
   <export>
     <build_type>ament_cmake</build_type>
   </export>
