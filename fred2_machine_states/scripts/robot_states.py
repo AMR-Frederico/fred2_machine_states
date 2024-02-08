@@ -102,7 +102,7 @@ class Fred_state(Node):
         self.create_subscription(Bool,
                                  '/goal_manager/goal/mission_completed',
                                  self.missionCompleted_callback,
-                                 5)
+                                 qos_profile)
 
 
         self.create_subscription(Bool,
@@ -121,6 +121,9 @@ class Fred_state(Node):
 
 
         self.add_on_set_parameters_callback(self.parameters_callback)
+
+
+        self.last_safe_status = self.get_clock().now()
 
     
     def parameters_callback(self, params):
@@ -150,8 +153,12 @@ class Fred_state(Node):
 
     def reset_callback(self, reset):
         
-        self.reset_robot_state = reset.data
 
+        if reset.data: 
+                            
+            self.robot_mode = self.MANUAL
+            self.robot_state = self.MANUAL
+        
 
 
 
@@ -184,6 +191,8 @@ class Fred_state(Node):
         
         self.robot_safety = status.data
 
+        self.last_safe_status = self.get_clock().now()
+
 
 
 
@@ -211,6 +220,13 @@ class Fred_state(Node):
 
 
     def machine_states(self):
+
+        current_time = self.get_clock().now()
+
+        if (current_time - self.last_safe_status).nanoseconds > 2e9 and self.robot_safety:
+
+            self.robot_safety = False
+            self.get_logger().warn('Robot safety status set to FALSE due to a timeout (no message received within the last 2 seconds).')
         
         
         if not self.robot_safety:
@@ -249,10 +265,6 @@ class Fred_state(Node):
             
             
 
-            if self.reset_robot_state: 
-                                
-                self.robot_mode = self.MANUAL
-                self.robot_state = self.MANUAL
 
 
         self.robot_state_msg.data = self.robot_state
