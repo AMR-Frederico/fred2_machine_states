@@ -81,6 +81,10 @@ class Fred_state(Node):
         self.goal_reached = False
         self.robot_in_goal = False
 
+        
+        self.finish_race = False
+
+
 
         self.load_params(node_path, node_group)
         self.get_params()
@@ -158,6 +162,8 @@ class Fred_state(Node):
                             
             self.robot_mode = self.MANUAL
             self.robot_state = self.MANUAL
+            self.finish_race = False
+            self.completed_course = False
         
 
 
@@ -237,7 +243,7 @@ class Fred_state(Node):
         else: 
             
 
-            if self.robot_mode == self.AUTONOMOUS: 
+            if self.robot_mode == self.AUTONOMOUS and not self.completed_course: 
                 
                 self.robot_state = self.AUTONOMOUS
 
@@ -250,13 +256,15 @@ class Fred_state(Node):
                     self.robot_state = self.IN_GOAL
 
 
+            if self.completed_course or self.finish_race: 
                 
-                if self.completed_course: 
-                    
-                    self.robot_state = self.MISSION_COMPLETED
-                    
-                    self.get_logger().warn('MISSION COMPLETED')
+                self.finish_race = True 
+
+                self.robot_state = self.MISSION_COMPLETED
+                
+                self.get_logger().warn('MISSION COMPLETED')
             
+                
 
 
             elif self.robot_mode == self.MANUAL: 
