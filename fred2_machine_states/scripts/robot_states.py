@@ -283,7 +283,6 @@ class Fred_state(Node):
         if debug_mode: 
             
             self.get_logger().info(f"Robot State: {self.robot_state} | Goal Reached: {self.last_goal_reached} | Mission Completed: {self.completed_course} | Reset: {self.reset_robot_state} | Robot safety: {self.robot_safety}\n")
-
         
         
     def load_params(self, path, group):
@@ -344,7 +343,7 @@ if __name__ == '__main__':
     thread = threading.Thread(target=rclpy.spin, args=(node,), daemon=True)
     thread.start()
 
-    rate = node.create_rate(1)
+    rate = node.create_rate(10)
 
     try:
         while rclpy.ok():
