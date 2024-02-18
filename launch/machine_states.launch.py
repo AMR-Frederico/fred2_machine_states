@@ -14,7 +14,8 @@ def generate_launch_description():
         package='fred2_machine_states',
         executable='robot_states.py',
         name='main_robot',
-        namespace='machine_states'
+        namespace='machine_states', 
+        parameters=[{'use_sim_time': False}]
     )
 
 
