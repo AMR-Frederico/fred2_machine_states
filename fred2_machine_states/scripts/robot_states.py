@@ -20,7 +20,7 @@ from std_msgs.msg import Bool, Int16
 
 
 # Parameters file (yaml)
-node_path = '~/ros2_ws/src/fred2_machine_states/config/params.yaml'
+node_path = '/home/ubuntu/ros2_ws/src/fred2_machine_states/config/params.yaml'
 node_group = 'main_robot'
 
 
