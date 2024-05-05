@@ -2,26 +2,19 @@
 
 import rclpy
 import threading
-import yaml
 import sys
-import os
 
 from typing import List
 
 from rclpy.context import Context
 from rclpy.executors import SingleThreadedExecutor
-from rclpy.node import Node
-from rclpy.parameter import Parameter
+from rclpy.node import Node, ParameterDescriptor
+from rclpy.parameter import Parameter, ParameterType
 from rclpy.qos import QoSPresetProfiles, QoSProfile, QoSHistoryPolicy, QoSLivelinessPolicy, QoSReliabilityPolicy, QoSDurabilityPolicy
 
 from rcl_interfaces.msg import SetParametersResult
 
 from std_msgs.msg import Bool, Int16
-
-
-# Parameters file (yaml)
-node_path = '/home/ubuntu/ros2_ws/src/fred2_machine_states/config/params.yaml'
-node_group = 'main_robot'
 
 
 debug_mode = '--debug' in sys.argv
@@ -86,7 +79,7 @@ class Fred_state(Node):
 
 
 
-        self.load_params(node_path, node_group)
+        self.load_params()
         self.get_params()
 
 
@@ -129,7 +122,44 @@ class Fred_state(Node):
 
         self.last_safe_status = self.get_clock().now()
 
+
     
+    def load_params(self):
+        # Declare parameters related to robot states and debug/testing
+        self.declare_parameters(
+            namespace='',
+            parameters=[
+                ('emergency', 0, ParameterDescriptor(description='Index for EMERGENCY state', type=ParameterType.PARAMETER_INTEGER)),
+                ('manual', 1, ParameterDescriptor(description='Index for MANUAL state', type=ParameterType.PARAMETER_INTEGER)),
+                ('autonomous', 2, ParameterDescriptor(description='Index for AUTONOMOUS state', type=ParameterType.PARAMETER_INTEGER)),
+                ('in_goal', 3, ParameterDescriptor(description='Index for IN GOAL state', type=ParameterType.PARAMETER_INTEGER)),
+                ('mission_completed', 4, ParameterDescriptor(description='Index for MISSION COMPLETED state', type=ParameterType.PARAMETER_INTEGER)),
+                # ('use_sim_time', False, ParameterDescriptor(description='Use simulation time', type=ParameterType.PARAMETER_BOOL)),
+                ('debug', False, ParameterDescriptor(description='Enable debug prints', type=ParameterType.PARAMETER_BOOL))
+            ]
+        )
+
+        self.get_logger().info('All parameters set successfully')
+
+
+    def get_params(self):
+        
+        self.MANUAL = self.get_parameter('manual').value
+        self.AUTONOMOUS = self.get_parameter('autonomous').value
+        self.IN_GOAL = self.get_parameter('in_goal').value
+        self.MISSION_COMPLETED = self.get_parameter('mission_completed').value
+        self.EMERGENCY = self.get_parameter('emergency').value
+        self.DEBUG = self.get_parameter('debug').value
+
+
+        # robot mode (MANUAL | AUTONOMOUS)  # robot state (EMERGENCY | IN GOAL | MISSION COMPLETED | MANUAL | AUTONOMOUS)
+        self.robot_state = self.EMERGENCY    # Starts in EMERGENCY state 
+        self.robot_mode = self.MANUAL     # Starts in MANUAL mode 
+
+
+
+
+
     def parameters_callback(self, params):
         
         for param in params:
@@ -149,6 +179,9 @@ class Fred_state(Node):
 
             elif param.name == 'emergency':
                 self.EMERGENCY = param.value
+            
+            elif param.name == 'debug': 
+                self.DEBUG = param.name
 
         return SetParametersResult(successful=True)
 
@@ -280,43 +313,11 @@ class Fred_state(Node):
 
 
 
-        if debug_mode: 
+        if debug_mode or self.DEBUG: 
             
             self.get_logger().info(f"Robot State: {self.robot_state} | Goal Reached: {self.last_goal_reached} | Mission Completed: {self.completed_course} | Reset: {self.reset_robot_state} | Robot safety: {self.robot_safety}\n")
         
         
-    def load_params(self, path, group):
-        param_path = os.path.expanduser(path)
-
-        with open(param_path, 'r') as params_list:
-            params = yaml.safe_load(params_list)
-
-        # Get the params inside the specified group
-        params = params.get(group, {})
-
-        # Declare parameters with values from the YAML file
-        for param_name, param_value in params.items():
-            # Adjust parameter name to lowercase
-            param_name_lower = param_name.lower()
-            self.declare_parameter(param_name_lower, param_value)
-            self.get_logger().info(f'{param_name_lower}: {param_value}')
-
-
-
-    def get_params(self):
-        
-        self.MANUAL = self.get_parameter('manual').value
-        self.AUTONOMOUS = self.get_parameter('autonomous').value
-        self.IN_GOAL = self.get_parameter('in_goal').value
-        self.MISSION_COMPLETED = self.get_parameter('mission_completed').value
-        self.EMERGENCY = self.get_parameter('emergency').value
-
-
-        # robot mode (MANUAL | AUTONOMOUS)  # robot state (EMERGENCY | IN GOAL | MISSION COMPLETED | MANUAL | AUTONOMOUS)
-        self.robot_state = self.EMERGENCY    # Starts in EMERGENCY state 
-        self.robot_mode = self.MANUAL     # Starts in MANUAL mode 
-
-
 
 
 if __name__ == '__main__':

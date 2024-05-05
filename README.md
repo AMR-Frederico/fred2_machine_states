@@ -47,15 +47,36 @@ The goal_mode.py node is the core component of the fred2_machine_states package.
 
 ### Parameters: 
 
-`MANUAL`: index state for manual mode
+`manual`: index state for manual mode
 
-`AUTONOMOUS`: index state for autonomous mode
+`autonomous`: index state for autonomous mode
 
-`IN_GOAL`: index state when the robot reaches the goal 
+`in_goali`: index state when the robot reaches the goal 
 
-`MISSION_COMPLETED`: index state when the robot finished the course
+`mission_completed`: index state when the robot finished the course
 
-`EMERGENCY`: index state when the robot cannot receive speed commands
+`emergency`: index state when the robot cannot receive speed commands
+
+#### To check available parameters 
+```
+ros2 param list 
+```
+
+#### To check the parameter description
+```
+ros2 param describe /machine_states/main_robot <parameter name>
+
+```
+
+#### To check the parameter value
+```
+ros2 param get /machine_states/main_robot <parameter name>
+```
+
+#### To reload the parameters file
+```
+ros2 param load /machine_states/main_robot <path-to-parameter-config-file>
+```
 
 
 ### Subscribers
@@ -86,12 +107,12 @@ The goal_mode.py node is the core component of the fred2_machine_states package.
 **Default:**
 
 ```
-ros2 run fred2_machine_states robot_states.py
+ros2 run fred2_machine_states robot_states.py --ros-args --params-file /home/ubuntu/ros2_ws/src/fred2_machine_states/config/params.yaml
 ```
 
 **Enable debug:**
 ```
-ros2 run fred2_machine_states robot_states.py --debug
+ros2 run fred2_machine_states robot_states.py --ros-args --params-file /home/ubuntu/ros2_ws/src/fred2_machine_states/config/params.yaml --debug
 ```
 ---
 
