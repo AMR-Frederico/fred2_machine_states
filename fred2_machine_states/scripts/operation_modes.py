@@ -22,15 +22,32 @@ debug_mode = '--debug' in sys.argv
 class GenericCallback():
 
 
-    def callback(self, ref, default_value):
+    def callback(self, ref, default_value, callback_1= None, callback_2= None, callback_3= None):
 
         ref['value'] = default_value
-        return lambda msg: self._set(ref, msg.data)
+        return lambda msg: [self._set(ref, msg.data), 
+                            self._execute_if_not_none(callback_1), 
+                            self._execute_if_not_none(callback_2), 
+                            self._execute_if_not_none(callback_3)]
+
+
+    def data_declare(self, default_value = {}):
+
+        ref = {}
+        ref['value'] = default_value
+        return ref
+
 
     def _set(self, ref, value):
             
         ref['value'] = value
 
+
+    def _execute_if_not_none(self, function):
+            
+        if function is not None: 
+            
+            function()
 
 
     def get(self, ref):
@@ -43,6 +60,9 @@ class Fred_state(Node):
 
     
 
+    # --------------------------------------------------------------------------------
+    #    Node Setup
+    # --------------------------------------------------------------------------------
         
     def __init__(self,
                  node_name: str,
@@ -101,30 +121,44 @@ class Fred_state(Node):
 
 
 
-        self.load_params()
-        self.get_params()
+        self.load_ros_param()
+        self.get_ros_params()
 
         self.generic_callback = GenericCallback() 
         self.peguei = {}
 
-        x = self.generic_callback.callback(self.peguei, False)
+        # --------------------------------------------------------------------------------
+        #    Class parameters
+        # --------------------------------------------------------------------------------
 
-        self.change_mode = False
+        self.change_mode = GenericCallback.data_declare(False)
+        self.robot_safety = GenericCallback.data_declare(False)
 
+
+        # --------------------------------------------------------------------------------
+        #    Subscribers
+        # --------------------------------------------------------------------------------
+
+        # Switch mode
         self.create_subscription(Bool,
                                  '/joy/machine_states/switch_mode',
-                                #  self.switchMode_callback,
                                  self.generic_callback.callback(self.change_mode, False),
                                  qos_profile)
 
-
+        # Robot safety
         self.create_subscription(Bool,
                                  '/robot_safety',
-                                 self.robotSafety_callback,
+                                 self.generic_callback.callback(self.robot_safety, False, self.update_last_safe_time),
                                  qos_profile)
 
 
-        self.robotState_pub = self.create_publisher(Int16, 'operation_state', qos_profile)
+
+        # --------------------------------------------------------------------------------
+        #    Publishers
+        # --------------------------------------------------------------------------------
+        self.operation_state_pub = self.create_publisher(Int16, 'operation_state', qos_profile)
+
+
 
 
         self.add_on_set_parameters_callback(self.parameters_callback)
@@ -133,15 +167,22 @@ class Fred_state(Node):
         self.last_safe_status = self.get_clock().now()
 
 
+    # --------------------------------------------------------------------------------
+    #    Class Functions
+    # --------------------------------------------------------------------------------
     
-    def load_params(self):
+    def load_ros_param(self):
+    
+        """Load params from to ROS param server 
+        """
+        
         # Declare parameters related to robot states and debug/testing
         self.declare_parameters(
             namespace='',
             parameters=[
                 ('emergency', 0, ParameterDescriptor(description='Index for EMERGENCY state', type=ParameterType.PARAMETER_INTEGER)),
-                ('manual', 1, ParameterDescriptor(description='Index for MANUAL state', type=ParameterType.PARAMETER_INTEGER)),
-                ('autonomous', 2, ParameterDescriptor(description='Index for AUTONOMOUS state', type=ParameterType.PARAMETER_INTEGER)),
+                ('manual', 10, ParameterDescriptor(description='Index for MANUAL state', type=ParameterType.PARAMETER_INTEGER)),
+                ('autonomous', 20, ParameterDescriptor(description='Index for AUTONOMOUS state', type=ParameterType.PARAMETER_INTEGER)),
                 ('debug', False, ParameterDescriptor(description='Enable debug prints', type=ParameterType.PARAMETER_BOOL))
             ]
         )
@@ -149,8 +190,10 @@ class Fred_state(Node):
         self.get_logger().info('All parameters set successfully')
 
 
-    def get_params(self):
+    def get_ros_params(self):
         
+        """Load params from ros param server to internal class
+        """
         self.MANUAL = self.get_parameter('manual').value
         self.AUTONOMOUS = self.get_parameter('autonomous').value
         self.EMERGENCY = self.get_parameter('emergency').value
@@ -192,7 +235,9 @@ class Fred_state(Node):
 
         self.last_safe_status = self.get_clock().now()
 
+    def update_last_safe_time(self):
 
+        self.last_safe_status = self.get_clock().now()
 
 
     def switchMode_callback(self, change_mode):
@@ -211,79 +256,78 @@ class Fred_state(Node):
 
                 self.robot_mode = self.MANUAL         
 
-        
-
         self.last_change_mode = change_mode.data
-
-
 
 
     def machine_states(self):
 
         current_time = self.get_clock().now()
 
-        p = self.generic_callback.get(self.peguei)
-        self.get_logger().info(f"{p}")
+        change_mode = self.generic_callback.get(self.change_mode)
+        robot_safe = self.generic_callback.get(self.robot_safety)
+
+        # p = self.generic_callback.get(self.peguei)
+        self.get_logger().info(f"{self.last_safe_status}")
 
         # -------------------------------------------------------------------------------
         # Filter
         # -------------------------------------------------------------------------------
 
         # Safety timeout handler
-        if (current_time - self.last_safe_status).nanoseconds > 2e9 and self.robot_safety:
+        # if (current_time - self.last_safe_status).nanoseconds > 2e9 and self.robot_safety:
 
-            self.robot_safety = False
-            self.get_logger().warn('Robot safety status set to FALSE due to a timeout (no message received within the last 2 seconds).')
+        #     self.robot_safety = False
+        #     self.get_logger().warn('Robot safety status set to FALSE due to a timeout (no message received within the last 2 seconds).')
         
         
-        if not self.robot_safety:
+        # if not self.robot_safety:
             
-            self.robot_state = self.EMERGENCY
+        #     self.robot_state = self.EMERGENCY
 
 
-        else: 
+        # else: 
             
 
-            if self.robot_mode == self.AUTONOMOUS and not self.completed_course: 
+        #     if self.robot_mode == self.AUTONOMOUS and not self.completed_course: 
                 
-                self.robot_state = self.AUTONOMOUS
+        #         self.robot_state = self.AUTONOMOUS
 
 
 
-                if self.robot_in_goal: 
+        #         if self.robot_in_goal: 
 
-                    self.get_logger().warn('ROBOT IN GOAL')
+        #             self.get_logger().warn('ROBOT IN GOAL')
                     
-                    self.robot_state = self.IN_GOAL
+        #             self.robot_state = self.IN_GOAL
 
 
-            if self.completed_course or self.finish_race: 
+        #     if self.completed_course or self.finish_race: 
                 
-                self.finish_race = True 
+        #         self.finish_race = True 
 
-                self.robot_state = self.MISSION_COMPLETED
+        #         self.robot_state = self.MISSION_COMPLETED
                 
-                self.get_logger().warn('MISSION COMPLETED')
+        #         self.get_logger().warn('MISSION COMPLETED')
             
                 
 
 
-            elif self.robot_mode == self.MANUAL: 
+        #     elif self.robot_mode == self.MANUAL: 
                 
-                self.robot_state = self.MANUAL
+        #         self.robot_state = self.MANUAL
             
             
 
 
 
-        self.robot_state_msg.data = self.robot_state
-        self.robotState_pub.publish(self.robot_state_msg)
+        # self.robot_state_msg.data = self.robot_state
+        # self.robotState_pub.publish(self.robot_state_msg)
 
 
 
-        if debug_mode or self.DEBUG: 
+        # if debug_mode or self.DEBUG: 
             
-            self.get_logger().info(f"Robot State: {self.robot_state} | Goal Reached: {self.last_goal_reached} | Mission Completed: {self.completed_course} | Reset: {self.reset_robot_state} | Robot safety: {self.robot_safety}\n")
+        #     self.get_logger().info(f"Robot State: {self.robot_state} | Goal Reached: {self.last_goal_reached} | Mission Completed: {self.completed_course} | Reset: {self.reset_robot_state} | Robot safety: {self.robot_safety}\n")
         
         
 
