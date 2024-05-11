@@ -20,7 +20,8 @@ def generate_launch_description():
     robot_states_node = launch_ros.actions.Node(
 
         package='fred2_machine_states',
-        executable='robot_states.py',
+        # executable='robot_states.py',
+        executable='operation_modes.py',
         name='main_robot',
         namespace='machine_states', 
         parameters=[config]

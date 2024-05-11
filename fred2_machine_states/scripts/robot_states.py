@@ -1,358 +1,363 @@
-#!/usr/bin/env python3
+# #!/usr/bin/env python3
 
-import rclpy
-import threading
-import sys
+# import rclpy
+# import threading
+# import sys
 
-from typing import List
+# from typing import List
 
-from rclpy.context import Context
-from rclpy.executors import SingleThreadedExecutor
-from rclpy.node import Node, ParameterDescriptor
-from rclpy.parameter import Parameter, ParameterType
-from rclpy.qos import QoSPresetProfiles, QoSProfile, QoSHistoryPolicy, QoSLivelinessPolicy, QoSReliabilityPolicy, QoSDurabilityPolicy
+# from rclpy.context import Context
+# from rclpy.executors import SingleThreadedExecutor
+# from rclpy.node import Node, ParameterDescriptor
+# from rclpy.parameter import Parameter, ParameterType
+# from rclpy.qos import QoSPresetProfiles, QoSProfile, QoSHistoryPolicy, QoSLivelinessPolicy, QoSReliabilityPolicy, QoSDurabilityPolicy
 
-from rcl_interfaces.msg import SetParametersResult
+# from rcl_interfaces.msg import SetParametersResult
 
-from std_msgs.msg import Bool, Int16
-
-
-debug_mode = '--debug' in sys.argv
+# from std_msgs.msg import Bool, Int16
 
 
-class Fred_state(Node):
-
-    def __init__(self,
-                 node_name: str,
-                 *,
-                 context:
-                 Context = None,
-                 cli_args: List[str] = None,
-                 namespace: str = None,
-                 use_global_arguments: bool = True,
-                 enable_rosout: bool = True,
-                 start_parameter_services: bool = True,
-                 parameter_overrides: List[Parameter] = None,
-                 allow_undeclared_parameters: bool = False,
-                 automatically_declare_parameters_from_overrides: bool = False) -> None:
+# debug_mode = '--debug' in sys.argv
 
 
-        super().__init__(node_name,
-                         context=context,
-                         cli_args=cli_args,
-                         namespace=namespace,
-                         use_global_arguments=use_global_arguments,
-                         enable_rosout=enable_rosout,
-                         start_parameter_services=start_parameter_services,
-                         parameter_overrides=parameter_overrides,
-                         allow_undeclared_parameters=allow_undeclared_parameters,
-                         automatically_declare_parameters_from_overrides=automatically_declare_parameters_from_overrides)
+# class Fred_state(Node):
+
+#     def __init__(self,
+#                  node_name: str,
+#                  *,
+#                  context:
+#                  Context = None,
+#                  cli_args: List[str] = None,
+#                  namespace: str = None,
+#                  use_global_arguments: bool = True,
+#                  enable_rosout: bool = True,
+#                  start_parameter_services: bool = True,
+#                  parameter_overrides: List[Parameter] = None,
+#                  allow_undeclared_parameters: bool = False,
+#                  automatically_declare_parameters_from_overrides: bool = False) -> None:
 
 
-        # quality protocol -> the node must not lose any message 
-        qos_profile = QoSProfile(
-            reliability=QoSReliabilityPolicy.RELIABLE, 
-            durability= QoSDurabilityPolicy.VOLATILE,
-            history=QoSHistoryPolicy.KEEP_LAST, 
-            depth=10, 
-            liveliness=QoSLivelinessPolicy.AUTOMATIC
+#         super().__init__(node_name,
+#                          context=context,
+#                          cli_args=cli_args,
+#                          namespace=namespace,
+#                          use_global_arguments=use_global_arguments,
+#                          enable_rosout=enable_rosout,
+#                          start_parameter_services=start_parameter_services,
+#                          parameter_overrides=parameter_overrides,
+#                          allow_undeclared_parameters=allow_undeclared_parameters,
+#                          automatically_declare_parameters_from_overrides=automatically_declare_parameters_from_overrides)
+
+
+#         # quality protocol -> the node must not lose any message 
+#         qos_profile = QoSProfile(
+#             reliability=QoSReliabilityPolicy.RELIABLE, 
+#             durability= QoSDurabilityPolicy.VOLATILE,
+#             history=QoSHistoryPolicy.KEEP_LAST, 
+#             depth=10, 
+#             liveliness=QoSLivelinessPolicy.AUTOMATIC
             
-        )
+#         )
 
-        self.last_change_mode = False
-        self.switch_mode = False
+#         self.last_change_mode = False
+#         self.switch_mode = False
 
-        self.robot_safety = False
+#         self.robot_safety = False
 
-        self.completed_course = False
+#         self.completed_course = False
 
-        self.reset_robot_state = False
+#         self.reset_robot_state = False
 
-        self.robot_state_msg = Int16()
+#         self.robot_state_msg = Int16()
 
-        self.last_goal_reached = False
-        self.goal_reached = False
-        self.robot_in_goal = False
+#         self.last_goal_reached = False
+#         self.goal_reached = False
+#         self.robot_in_goal = False
 
         
-        self.finish_race = False
+#         self.finish_race = False
 
 
 
-        self.load_params()
-        self.get_params()
+#         self.load_params()
+#         self.get_params()
 
 
 
-        self.create_subscription(Bool,
-                                 '/joy/machine_states/switch_mode',
-                                 self.switchMode_callback,
-                                 qos_profile)
+#         self.create_subscription(Bool,
+#                                  '/joy/machine_states/switch_mode',
+#                                  self.switchMode_callback,
+#                                  qos_profile)
 
 
-        self.create_subscription(Bool,
-                                 '/robot_safety',
-                                 self.robotSafety_callback,
-                                 qos_profile)
+#         self.create_subscription(Bool,
+#                                  '/robot_safety',
+#                                  self.robotSafety_callback,
+#                                  qos_profile)
 
 
-        self.create_subscription(Bool,
-                                 '/goal_manager/goal/mission_completed',
-                                 self.missionCompleted_callback,
-                                 qos_profile)
+#         self.create_subscription(Bool,
+#                                  '/goal_manager/goal/mission_completed',
+#                                  self.missionCompleted_callback,
+#                                  qos_profile)
 
 
-        self.create_subscription(Bool,
-                                 '/goal_manager/goal/reached',
-                                 self.goalReached_callback,
-                                 qos_profile)
+#         self.create_subscription(Bool,
+#                                  '/goal_manager/goal/reached',
+#                                  self.goalReached_callback,
+#                                  qos_profile)
 
 
-        self.create_subscription(Bool,
-                                 '/odom/reset',
-                                 self.reset_callback,
-                                 qos_profile)
+#         self.create_subscription(Bool,
+#                                  '/odom/reset',
+#                                  self.reset_callback,
+#                                  qos_profile)
 
 
-        self.robotState_pub = self.create_publisher(Int16, 'robot_state', qos_profile)
+#         self.robotState_pub = self.create_publisher(Int16, 'robot_state', qos_profile)
 
 
-        self.add_on_set_parameters_callback(self.parameters_callback)
+#         self.add_on_set_parameters_callback(self.parameters_callback)
 
 
-        self.last_safe_status = self.get_clock().now()
+#         self.last_safe_status = self.get_clock().now()
 
 
     
-    def load_params(self):
-        # Declare parameters related to robot states and debug/testing
-        self.declare_parameters(
-            namespace='',
-            parameters=[
-                ('emergency', 0, ParameterDescriptor(description='Index for EMERGENCY state', type=ParameterType.PARAMETER_INTEGER)),
-                ('manual', 1, ParameterDescriptor(description='Index for MANUAL state', type=ParameterType.PARAMETER_INTEGER)),
-                ('autonomous', 2, ParameterDescriptor(description='Index for AUTONOMOUS state', type=ParameterType.PARAMETER_INTEGER)),
-                ('in_goal', 3, ParameterDescriptor(description='Index for IN GOAL state', type=ParameterType.PARAMETER_INTEGER)),
-                ('mission_completed', 4, ParameterDescriptor(description='Index for MISSION COMPLETED state', type=ParameterType.PARAMETER_INTEGER)),
-                # ('use_sim_time', False, ParameterDescriptor(description='Use simulation time', type=ParameterType.PARAMETER_BOOL)),
-                ('debug', False, ParameterDescriptor(description='Enable debug prints', type=ParameterType.PARAMETER_BOOL))
-            ]
-        )
+#     def load_params(self):
+#         # Declare parameters related to robot states and debug/testing
+#         self.declare_parameters(
+#             namespace='',
+#             parameters=[
+#                 ('emergency', 0, ParameterDescriptor(description='Index for EMERGENCY state', type=ParameterType.PARAMETER_INTEGER)),
+#                 ('manual', 1, ParameterDescriptor(description='Index for MANUAL state', type=ParameterType.PARAMETER_INTEGER)),
+#                 ('autonomous', 2, ParameterDescriptor(description='Index for AUTONOMOUS state', type=ParameterType.PARAMETER_INTEGER)),
+#                 ('in_goal', 3, ParameterDescriptor(description='Index for IN GOAL state', type=ParameterType.PARAMETER_INTEGER)),
+#                 ('mission_completed', 4, ParameterDescriptor(description='Index for MISSION COMPLETED state', type=ParameterType.PARAMETER_INTEGER)),
+#                 # ('use_sim_time', False, ParameterDescriptor(description='Use simulation time', type=ParameterType.PARAMETER_BOOL)),
+#                 ('debug', False, ParameterDescriptor(description='Enable debug prints', type=ParameterType.PARAMETER_BOOL))
+#             ]
+#         )
 
-        self.get_logger().info('All parameters set successfully')
+#         self.get_logger().info('All parameters set successfully')
 
 
-    def get_params(self):
+#     def get_params(self):
         
-        self.MANUAL = self.get_parameter('manual').value
-        self.AUTONOMOUS = self.get_parameter('autonomous').value
-        self.IN_GOAL = self.get_parameter('in_goal').value
-        self.MISSION_COMPLETED = self.get_parameter('mission_completed').value
-        self.EMERGENCY = self.get_parameter('emergency').value
-        self.DEBUG = self.get_parameter('debug').value
+#         self.MANUAL = self.get_parameter('manual').value
+#         self.AUTONOMOUS = self.get_parameter('autonomous').value
+#         self.IN_GOAL = self.get_parameter('in_goal').value
+#         self.MISSION_COMPLETED = self.get_parameter('mission_completed').value
+#         self.EMERGENCY = self.get_parameter('emergency').value
+#         self.DEBUG = self.get_parameter('debug').value
 
 
-        # robot mode (MANUAL | AUTONOMOUS)  # robot state (EMERGENCY | IN GOAL | MISSION COMPLETED | MANUAL | AUTONOMOUS)
-        self.robot_state = self.EMERGENCY    # Starts in EMERGENCY state 
-        self.robot_mode = self.MANUAL     # Starts in MANUAL mode 
+#         # robot mode (MANUAL | AUTONOMOUS)  # robot state (EMERGENCY | IN GOAL | MISSION COMPLETED | MANUAL | AUTONOMOUS)
+#         self.robot_state = self.EMERGENCY    # Starts in EMERGENCY state 
+#         self.robot_mode = self.MANUAL     # Starts in MANUAL mode 
 
 
 
 
 
-    def parameters_callback(self, params):
+#     def parameters_callback(self, params):
         
-        for param in params:
-            self.get_logger().info(f"Parameter '{param.name}' changed to: {param.value}")
+#         for param in params:
+#             self.get_logger().info(f"Parameter '{param.name}' changed to: {param.value}")
 
-            if param.name == 'manual':
-                self.MANUAL = param.value
+#             if param.name == 'manual':
+#                 self.MANUAL = param.value
 
-            elif param.name == 'autonomous':
-                self.AUTONOMOUS = param.value
+#             elif param.name == 'autonomous':
+#                 self.AUTONOMOUS = param.value
 
-            elif param.name == 'in_goal':
-                self.IN_GOAL = param.value
+#             elif param.name == 'in_goal':
+#                 self.IN_GOAL = param.value
 
-            elif param.name == 'mission_completed':
-                self.MISSION_COMPLETED = param.value
+#             elif param.name == 'mission_completed':
+#                 self.MISSION_COMPLETED = param.value
 
-            elif param.name == 'emergency':
-                self.EMERGENCY = param.value
+#             elif param.name == 'emergency':
+#                 self.EMERGENCY = param.value
             
-            elif param.name == 'debug': 
-                self.DEBUG = param.name
+#             elif param.name == 'debug': 
+#                 self.DEBUG = param.name
 
-        return SetParametersResult(successful=True)
-
-
+#         return SetParametersResult(successful=True)
 
 
-    def reset_callback(self, reset):
+
+
+#     def reset_callback(self, reset):
         
 
-        if reset.data: 
+#         if reset.data: 
                             
-            self.robot_mode = self.MANUAL
-            self.robot_state = self.MANUAL
-            self.finish_race = False
-            self.completed_course = False
+#             self.robot_mode = self.MANUAL
+#             self.robot_state = self.MANUAL
+#             self.finish_race = False
+#             self.completed_course = False
         
 
 
 
-    def goalReached_callback(self, goal):
+#     def goalReached_callback(self, goal):
         
         
-        if goal.data and not self.last_goal_reached:
+#         if goal.data and not self.last_goal_reached:
             
-            self.robot_in_goal = True
+#             self.robot_in_goal = True
 
         
-        else:
-            self.robot_in_goal = False
+#         else:
+#             self.robot_in_goal = False
 
 
-        self.last_goal_reached = goal.data
+#         self.last_goal_reached = goal.data
 
 
 
 
 
-    def missionCompleted_callback(self, mission_completed):
+#     def missionCompleted_callback(self, mission_completed):
         
-        self.completed_course = mission_completed.data
+#         self.completed_course = mission_completed.data
 
 
 
 
-    def robotSafety_callback(self, status):
+#     def robotSafety_callback(self, status):
         
-        self.robot_safety = status.data
+#         self.robot_safety = status.data
 
-        self.last_safe_status = self.get_clock().now()
-
-
-
-
-    def switchMode_callback(self, change_mode):
-        
-
-        if change_mode.data > self.last_change_mode:
-
-
-            if self.robot_mode == self.MANUAL: 
-
-                self.robot_mode = self.AUTONOMOUS
+#         self.last_safe_status = self.get_clock().now()
 
 
 
-            elif self.robot_mode == self.AUTONOMOUS: 
 
-                self.robot_mode = self.MANUAL         
-
+#     def switchMode_callback(self, change_mode):
         
 
-        self.last_change_mode = change_mode.data
+#         if change_mode.data > self.last_change_mode:
+
+
+#             if self.robot_mode == self.MANUAL: 
+
+#                 self.robot_mode = self.AUTONOMOUS
+
+
+
+#             elif self.robot_mode == self.AUTONOMOUS: 
+
+#                 self.robot_mode = self.MANUAL         
+
+        
+
+#         self.last_change_mode = change_mode.data
 
 
 
 
-    def machine_states(self):
+#     def machine_states(self):
 
-        current_time = self.get_clock().now()
+#         current_time = self.get_clock().now()
 
-        if (current_time - self.last_safe_status).nanoseconds > 2e9 and self.robot_safety:
+#         # -------------------------------------------------------------------------------
+#         # Filter
+#         # -------------------------------------------------------------------------------
 
-            self.robot_safety = False
-            self.get_logger().warn('Robot safety status set to FALSE due to a timeout (no message received within the last 2 seconds).')
+#         # Safety timeout handler
+#         if (current_time - self.last_safe_status).nanoseconds > 2e9 and self.robot_safety:
+
+#             self.robot_safety = False
+#             self.get_logger().warn('Robot safety status set to FALSE due to a timeout (no message received within the last 2 seconds).')
         
         
-        if not self.robot_safety:
+#         if not self.robot_safety:
             
-            self.robot_state = self.EMERGENCY
+#             self.robot_state = self.EMERGENCY
 
 
-        else: 
+#         else: 
             
 
-            if self.robot_mode == self.AUTONOMOUS and not self.completed_course: 
+#             if self.robot_mode == self.AUTONOMOUS and not self.completed_course: 
                 
-                self.robot_state = self.AUTONOMOUS
+#                 self.robot_state = self.AUTONOMOUS
 
 
 
-                if self.robot_in_goal: 
+#                 if self.robot_in_goal: 
 
-                    self.get_logger().warn('ROBOT IN GOAL')
+#                     self.get_logger().warn('ROBOT IN GOAL')
                     
-                    self.robot_state = self.IN_GOAL
+#                     self.robot_state = self.IN_GOAL
 
 
-            if self.completed_course or self.finish_race: 
+#             if self.completed_course or self.finish_race: 
                 
-                self.finish_race = True 
+#                 self.finish_race = True 
 
-                self.robot_state = self.MISSION_COMPLETED
+#                 self.robot_state = self.MISSION_COMPLETED
                 
-                self.get_logger().warn('MISSION COMPLETED')
+#                 self.get_logger().warn('MISSION COMPLETED')
             
                 
 
 
-            elif self.robot_mode == self.MANUAL: 
+#             elif self.robot_mode == self.MANUAL: 
                 
-                self.robot_state = self.MANUAL
+#                 self.robot_state = self.MANUAL
             
             
 
 
 
-        self.robot_state_msg.data = self.robot_state
-        self.robotState_pub.publish(self.robot_state_msg)
+#         self.robot_state_msg.data = self.robot_state
+#         self.robotState_pub.publish(self.robot_state_msg)
 
 
 
-        if debug_mode or self.DEBUG: 
+#         if debug_mode or self.DEBUG: 
             
-            self.get_logger().info(f"Robot State: {self.robot_state} | Goal Reached: {self.last_goal_reached} | Mission Completed: {self.completed_course} | Reset: {self.reset_robot_state} | Robot safety: {self.robot_safety}\n")
+#             self.get_logger().info(f"Robot State: {self.robot_state} | Goal Reached: {self.last_goal_reached} | Mission Completed: {self.completed_course} | Reset: {self.reset_robot_state} | Robot safety: {self.robot_safety}\n")
         
         
 
 
-if __name__ == '__main__':
-    rclpy.init()
+# if __name__ == '__main__':
+#     rclpy.init()
 
-    # Create a custom context for single thread and real-time execution
-    states_context = rclpy.Context()
-    states_context.init()
-    states_context.use_real_time = True
+#     # Create a custom context for single thread and real-time execution
+#     states_context = rclpy.Context()
+#     states_context.init()
+#     states_context.use_real_time = True
 
-    node = Fred_state(
-        node_name='main_robot',
-        cli_args='--debug',
-        context=states_context,
-        namespace='machine_states',
-        start_parameter_services=True
-    )
+#     node = Fred_state(
+#         node_name='main_robot',
+#         cli_args='--debug',
+#         context=states_context,
+#         namespace='machine_states',
+#         start_parameter_services=True
+#     )
 
-    # Make the execution in real time
-    executor = SingleThreadedExecutor(context=states_context)
-    executor.add_node(node=node)
+#     # Make the execution in real time
+#     executor = SingleThreadedExecutor(context=states_context)
+#     executor.add_node(node=node)
 
-    # Separate thread for callbacks
-    thread = threading.Thread(target=rclpy.spin, args=(node,), daemon=True)
-    thread.start()
+#     # Separate thread for callbacks
+#     thread = threading.Thread(target=rclpy.spin, args=(node,), daemon=True)
+#     thread.start()
 
-    rate = node.create_rate(10)
+#     rate = node.create_rate(10)
 
-    try:
-        while rclpy.ok():
-            node.machine_states()
-            rate.sleep()
+#     try:
+#         while rclpy.ok():
+#             node.machine_states()
+#             rate.sleep()
 
-    except KeyboardInterrupt:
-        pass
+#     except KeyboardInterrupt:
+#         pass
 
-    rclpy.shutdown()
-    thread.join()
+#     rclpy.shutdown()
+#     thread.join()

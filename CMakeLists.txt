@@ -24,6 +24,7 @@ ament_python_install_package(${PROJECT_NAME})
 # install Python executables
 install(PROGRAMS
   fred2_machine_states/scripts/robot_states.py
+  fred2_machine_states/scripts/operation_modes.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
