@@ -25,8 +25,9 @@ class OperationModesStateMachine():
         #    Class parameters
         # -------------------------------------
 
-        self.state = OperationStates.INIT.value
-        self.last_state = OperationStates.INIT.value
+        self.state = OperationStates.INIT
+        self.last_state = OperationStates.INIT
+        self.initialized = False
 
         self.switch_mode = False
         self.robot_safety = False
@@ -40,7 +41,7 @@ class OperationModesStateMachine():
     # --------------------------------------------------------------------------------
 
 
-    def machine_states(self, robot_safety, switch_mode):
+    def machine_states_routine(self, robot_safety, switch_mode):
 
 
         # -------------------------------------
@@ -66,7 +67,10 @@ class OperationModesStateMachine():
         match self.state:
 
             case OperationStates.INIT:
-                pass
+                
+                if not self.initialized:
+                    
+                    self.state = OperationStates.MANUAL_MODE
 
 
             case OperationStates.MANUAL_MODE:
@@ -93,7 +97,14 @@ class OperationModesStateMachine():
         # -------------------------------------
         #    Outputs
         # -------------------------------------
+        match self.state:
 
+            case OperationStates.INIT:
+
+                if self.init_callback is not None:
+                    self.init_callback()
+                
+                self.initialized = True
 
         # -------------------------------------
         #    Reset variables
