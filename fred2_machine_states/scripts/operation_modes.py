@@ -41,15 +41,12 @@ class OperationModesStateMachine():
     # --------------------------------------------------------------------------------
 
 
-    def machine_states_routine(self, robot_safety, switch_mode):
+    def machine_states_routine(self):
 
 
         # -------------------------------------
         # Input
         # -------------------------------------
-
-        self.robot_safety = robot_safety
-        self.switch_mode = switch_mode
 
 
         # -------------------------------------
