@@ -53,7 +53,7 @@ class OperationModesStateMachine():
     # --------------------------------------------------------------------------------
 
 
-    def machine_states_routine(self):
+    def routine(self):
 
 
         # -------------------------------------

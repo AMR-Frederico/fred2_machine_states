@@ -21,7 +21,7 @@ def generate_launch_description():
 
         package='fred2_machine_states',
         # executable='robot_states.py',
-        executable='operation_modes.py',
+        executable='operation_modes_ros.py',
         name='main_robot',
         namespace='machine_states', 
         parameters=[config]

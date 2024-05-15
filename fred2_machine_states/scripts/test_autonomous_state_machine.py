@@ -6,114 +6,64 @@ def create_state_machine():
     return AutonomousStateMachine(lambda: print("State Machine started"))
 
 
+# def test_callback(val):
+#     """recept dict if value = False and sets to True
+
+#     Args:
+#         val (dict): dict with value == False
+#     """
+#     val["value"] = True
+
 
 def test_init():
 
     state_machine = create_state_machine()
-    assert state_machine.state == OperationStates.INIT 
+    assert state_machine.state == AutonomousStates.INIT 
 
 
 def test_started():
 
     state_machine = create_state_machine()
 
+    state_machine.routine()
 
-    state_machine.robot_safety = True
-    state_machine.switch_mode = False
-
-    state_machine.machine_states_routine()
-
-    assert state_machine.state == OperationStates.MANUAL_MODE
+    assert state_machine.state == AutonomousStates.MOVING_TO_GOAL
 
 
-def test_manual_to_autonomous():
-
-    state_machine = create_state_machine()
-    
-    state_machine.robot_safety = True
-    state_machine.switch_mode = True
-
-    state_machine.machine_states_routine()
-    
-    state_machine.robot_safety = True
-    state_machine.switch_mode = True
-
-    state_machine.machine_states_routine()
-
-    assert state_machine.state == OperationStates.AUTONOMOUS_MODE
-
-
-def test_autonomous_to_manual():
+def test_moving_to_at_waypoint():
 
     state_machine = create_state_machine()
 
-    state_machine.robot_safety = True
-    state_machine.switch_mode = True
-    
-    state_machine.machine_states_routine()
-    
-    state_machine.robot_safety = True
-    state_machine.switch_mode = True
+    # init -> moving to goal
+    state_machine.routine()
 
-    state_machine.machine_states_routine()
-    
-    state_machine.robot_safety = True
-    state_machine.switch_mode = True
+    # moving to goal -> at waypoint
+    state_machine.at_waypoint = True
+    state_machine.routine()
 
-    state_machine.machine_states_routine()
+    assert state_machine.state == AutonomousStates.AT_WAYPOINT
 
-    assert state_machine.state == OperationStates.MANUAL_MODE
-
-
-def test_init_to_emergency():
-
-    state_machine = create_state_machine()
-    
-
-    state_machine.robot_safety = False
-    state_machine.switch_mode = False
-
-    state_machine.machine_states_routine()
-
-    assert state_machine.state == OperationStates.EMERGENCY_MODE
-
-
-
-def test_manual_to_emergency():
-
-    state_machine = create_state_machine()
-    
-    state_machine.robot_safety = False
-    state_machine.switch_mode = True
-
-    state_machine.machine_states_routine()
-
-    state_machine.robot_safety = False
-    state_machine.switch_mode = False
-
-    state_machine.machine_states_routine()
-
-    assert state_machine.state == OperationStates.EMERGENCY_MODE
-
-
-
-def test_autonomous_to_emergency():
+def test_at_waypoint_callback():
 
     state_machine = create_state_machine()
 
-    state_machine.robot_safety = True
-    state_machine.switch_mode = True
+    # init -> moving to goal
+    state_machine.routine()
 
-    state_machine.machine_states_routine()
-    
-    state_machine.robot_safety = True
-    state_machine.switch_mode = True
+    # moving to goal -> at waypoint
+    state_machine.at_waypoint = True
+    callback_works = {'value': False}
 
-    state_machine.machine_states_routine()
+    def test_callback():
+        """recept dict if value = False and sets to True
 
-    state_machine.robot_safety = False
-    state_machine.switch_mode = True
+        Args:
+            val (dict): dict with value == False
+        """
+        callback_works["value"] = True
 
-    state_machine.machine_states_routine()
+    state_machine.at_waypoint_callback = test_callback
+    state_machine.routine()
 
-    assert state_machine.state == OperationStates.EMERGENCY_MODE
+
+    assert callback_works["value"] == True
