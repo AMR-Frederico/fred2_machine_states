@@ -1,0 +1,2 @@
+- Retirei estado check goal pois o rob"o deve checar se esta no ponto sempre enquanto estiver indo ao ponto
+- Separei ROS de python afim de maior controle, isolamento facilita localizacao de problemas, manutencao e trabalho paralelo
