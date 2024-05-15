@@ -27,15 +27,21 @@ class AutonomousStateMachine():
 
     def __init__(self, 
                 init_callback = None,
+                moving_to_goal_callback = None,
                 at_waypoint_callback = None,
-                mission_accomplished_callback = None
+                at_ghost_waypoint_callback = None,
+                mission_accomplished_callback = None,
+                robot_stuck_callback = None
                 ):
         
 
         # get from constructor
         self.init_callback = init_callback
+        self.moving_to_goal_callback = moving_to_goal_callback
         self.at_waypoint_callback = at_waypoint_callback
+        self.at_ghost_waypoint_callback = at_ghost_waypoint_callback
         self.mission_accomplished_callback = mission_accomplished_callback
+        self.robot_stuck_callback = robot_stuck_callback
 
         # -------------------------------------
         #    Class parameters
@@ -48,7 +54,7 @@ class AutonomousStateMachine():
         self.robot_stuck = False
         self.at_waypoint = False
         self.no_more_waypoints = False
-        self.follow_ghost_waypoint = False
+        self.following_ghost_waypoint = False
 
         
 
@@ -92,11 +98,11 @@ class AutonomousStateMachine():
 
             case AutonomousStates.MOVING_TO_GOAL:
 
-                if self.at_waypoint and self.follow_ghost_waypoint:
+                if self.at_waypoint and self.following_ghost_waypoint:
 
                     self.state = AutonomousStates.AT_GHOST_WAYPOINT
 
-                elif self.at_waypoint and not self.follow_ghost_waypoint:
+                elif self.at_waypoint and not self.following_ghost_waypoint:
 
                     self.state = AutonomousStates.AT_WAYPOINT
 
@@ -141,20 +147,40 @@ class AutonomousStateMachine():
 
             case AutonomousStates.INIT:
 
-                if self.init_callback is not None:
-                    self.init_callback()
-                
+                execute_if_not_none(self.init_callback)
                 self.initialized = True
 
+
+            case AutonomousStates.MOVING_TO_GOAL:
+
+                execute_if_not_none(self.moving_to_goal_callback)
 
 
             case AutonomousStates.AT_WAYPOINT:
 
                 execute_if_not_none(self.at_waypoint_callback)
 
+
+            case AutonomousStates.AT_GHOST_WAYPOINT:
+
+                execute_if_not_none(self.at_ghost_waypoint_callback)
+
+
+            case AutonomousStates.MISSION_ACCOMPLISHED:
+
+                execute_if_not_none(self.mission_accomplished_callback)
+            
+
+            case AutonomousStates.ROBOT_STUCK:
+
+                execute_if_not_none(self.robot_stuck)
+
+            
+
         # -------------------------------------
         #    Reset variables
         # -------------------------------------
 
+        # store last state
         if self.state != self.last_state:
             self.last_state = self.state 
