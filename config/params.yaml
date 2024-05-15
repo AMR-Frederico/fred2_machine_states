@@ -3,9 +3,9 @@
 
     # Robot states 
     emergency: 0                # Index for EMERGENCY state 
-    manual: 1                   # Index for MANUAL state 
-    autonomous: 2               # Index for AUTONOMOUS state 
-    in_goal: 3                  # Index for IN GOAL state 
+    manual: 10                   # Index for MANUAL state 
+    autonomous: 20               # Index for AUTONOMOUS state 
+    in_goal: 30                  # Index for IN GOAL state 
     mission_completed: 4        # Index for MISSION COMPLETED state 
     
     # Debug/test 

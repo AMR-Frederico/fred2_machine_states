@@ -25,6 +25,7 @@ debug_mode = '--debug' in sys.argv
 # --------------------------------------------------------------------------------
 
 ROBOT_UNSAFE_TRIGGER_NANOSECONDS = 2e9
+# ROBOT_UNSAFE_TRIGGER_NANOSECONDS = 11e9 # debug
 
 
 # --------------------------------------------------------------------------------
@@ -282,7 +283,7 @@ class OperationModeNode(Node):
 
         # detect robot unsafe status
         robot_unsafe_timer_triggered = (current_time - self.last_safe_status_clock).nanoseconds > ROBOT_UNSAFE_TRIGGER_NANOSECONDS 
-        robot_safe = (robot_unsafe_timer_triggered and robot_safe_ros)
+        robot_safe = (robot_safe_ros and not robot_unsafe_timer_triggered)
 
 
 
@@ -301,6 +302,7 @@ class OperationModeNode(Node):
         # -------------------------------------
 
         self.publish_mode()
+        if debug_mode: self.get_logger().info(f"State: {self.state_machine.state}, robot safe: {robot_safe}, change_mode_rising_edge: {change_mode_rising_edge}")
 
 
         # -------------------------------------
