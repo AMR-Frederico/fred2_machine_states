@@ -292,6 +292,16 @@ class AutonomousStateMachineNode(Node):
         self.autonomous_state_pub.publish(self.state_msg)
 
 
+
+    def check_if_at_waypoint(self, goal_reached):
+        
+        result = goal_reached
+        # get sensors and goal reached
+        # do something math with parameters
+        # decide if in waypoint
+
+        return result
+
     # --------------------------------------------------------------------------------
     #    State Machine
     # --------------------------------------------------------------------------------
@@ -315,6 +325,7 @@ class AutonomousStateMachineNode(Node):
 
         # detect change mode rising edge
         goal_reached_rising_edge = (goal_reached_ros >  self.last_goal_reached) # add sensors
+        at_waypoint = self.check_if_at_waypoint(goal_reached_rising_edge)
 
         autonomous_mode = (autonomous_mode_ros == self.operation_mode_AUTONOMOUS) 
         paused = not autonomous_mode
@@ -327,7 +338,7 @@ class AutonomousStateMachineNode(Node):
 
         self.state_machine.no_more_waypoints = no_more_waypoints_ros
         self.state_machine.following_ghost_waypoint = following_ghost_waypoint
-        self.state_machine.at_waypoint = goal_reached_rising_edge
+        self.state_machine.at_waypoint = at_waypoint
         self.state_machine.paused = paused
         
         self.state_machine.routine()
