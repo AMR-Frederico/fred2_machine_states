@@ -213,3 +213,44 @@ def test_mission_accomplished_callback():
     state_machine.routine()
 
     assert callback_works["value"] == True
+    
+
+# --------------------------------------------------------------------------------
+#    Stuck
+# --------------------------------------------------------------------------------
+
+
+def test_moving_to_stuck():
+
+    state_machine = create_state_machine()
+
+    # init -> moving to goal
+    state_machine.routine()
+
+    # moving to goal -> stuck
+    state_machine.robot_stuck = True
+    state_machine.routine()
+
+
+    assert state_machine.state == AutonomousStates.ROBOT_STUCK
+
+
+def test_back_from_stuck():
+
+    state_machine = create_state_machine()
+
+    # init -> moving to goal
+    state_machine.routine()
+
+    # moving to goal -> stuck
+    state_machine.robot_stuck = True
+    state_machine.routine()
+    state_machine.routine()
+    state_machine.routine()
+    state_machine.routine()
+
+    state_machine.robot_stuck = False
+    state_machine.routine()
+
+
+    assert state_machine.state == AutonomousStates.MOVING_TO_GOAL
