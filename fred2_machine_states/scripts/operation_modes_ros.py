@@ -302,7 +302,8 @@ class OperationModeNode(Node):
         # -------------------------------------
 
         self.publish_mode()
-        if debug_mode: self.get_logger().info(f"State: {self.state_machine.state}, robot safe: {robot_safe}, change_mode_rising_edge: {change_mode_rising_edge}")
+        if debug_mode: 
+            self.get_logger().info(f"State: {self.state_machine.state}, robot safe: {robot_safe}, change_mode_rising_edge: {change_mode_rising_edge}")
 
 
         # -------------------------------------
