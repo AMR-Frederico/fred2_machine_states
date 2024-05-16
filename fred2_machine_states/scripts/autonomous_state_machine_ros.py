@@ -235,6 +235,7 @@ class AutonomousStateMachineNode(Node):
                 ('at_ghost_waypoint', 30, ParameterDescriptor(description='Index for AT_GHOST_WAYPOINT state', type=ParameterType.PARAMETER_INTEGER)),
                 ('mission_accomplished', 40, ParameterDescriptor(description='Index for MISSION_ACCOMPLISHED state', type=ParameterType.PARAMETER_INTEGER)),
                 ('robot_stuck', 50, ParameterDescriptor(description='Index for ROBOT_STUCK state', type=ParameterType.PARAMETER_INTEGER)),
+                ('paused', 60, ParameterDescriptor(description='Index for PAUSED state', type=ParameterType.PARAMETER_INTEGER)),
                 ('debug', False, ParameterDescriptor(description='Enable debug prints', type=ParameterType.PARAMETER_BOOL))
             ]
         )
@@ -252,6 +253,7 @@ class AutonomousStateMachineNode(Node):
         self.AT_GHOST_WAYPOINT =    self.get_parameter('at_ghost_waypoint').value
         self.MISSION_ACCOMPLISHED = self.get_parameter('mission_accomplished').value
         self.ROBOT_STUCK =          self.get_parameter('robot_stuck').value
+        self.PAUSED =                self.get_parameter('paused').value
         self.DEBUG =                self.get_parameter('debug').value
 
 
@@ -283,6 +285,9 @@ class AutonomousStateMachineNode(Node):
             case AutonomousStates.ROBOT_STUCK:
                 data = self.ROBOT_STUCK
 
+            case AutonomousStates.PAUSED:
+                data = self.PAUSED
+
         self.state_msg.data = data
         self.autonomous_state_pub.publish(self.state_msg)
 
@@ -312,6 +317,7 @@ class AutonomousStateMachineNode(Node):
         goal_reached_rising_edge = (goal_reached_ros >  self.last_goal_reached) # add sensors
 
         autonomous_mode = (autonomous_mode_ros == self.operation_mode_AUTONOMOUS) 
+        paused = not autonomous_mode
 
         # -------------------------------------
         #    Machine State Input
@@ -320,9 +326,9 @@ class AutonomousStateMachineNode(Node):
         self.state_machine.no_more_waypoints = no_more_waypoints_ros
         self.state_machine.following_ghost_waypoint = following_ghost_waypoint_ros
         self.state_machine.at_waypoint = goal_reached_rising_edge
+        self.state_machine.paused = paused
         
-        if autonomous_mode: 
-            self.state_machine.routine()
+        self.state_machine.routine()
 
         # -------------------------------------
         #    Output

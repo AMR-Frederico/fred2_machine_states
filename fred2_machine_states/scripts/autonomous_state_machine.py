@@ -84,6 +84,9 @@ class AutonomousStateMachine():
 
             self.state = AutonomousStates.ROBOT_STUCK
 
+        if self.paused:
+
+            self.state = AutonomousStates.PAUSED
 
         # -------------------------------------
         # State Machine
@@ -93,7 +96,7 @@ class AutonomousStateMachine():
 
             case AutonomousStates.INIT:
                 
-                if not self.initialized:
+                if self.initialized:
                     
                     self.state = AutonomousStates.MOVING_TO_GOAL
 
@@ -143,6 +146,14 @@ class AutonomousStateMachine():
 
 
 
+            case AutonomousStates.PAUSED:
+
+                if not self.paused:
+
+                    self.state = self.last_state
+
+
+
         # -------------------------------------
         #    Outputs
         # -------------------------------------
@@ -184,7 +195,7 @@ class AutonomousStateMachine():
         #    Reset variables
         # -------------------------------------
 
-        state_changed = (state_in_init != self.state)
+        state_changed = (state_in_init != self.state and self.state != AutonomousStates.INIT)
 
         # store last state
         if state_changed:
