@@ -129,10 +129,10 @@ class AutonomousStateMachineNode(Node):
         #    Class parameters
         # --------------------------------------------------------------------------------
 
-        # set data getted from ROS2 callback
+        # set data got from ROS2 callback
         self.mission_accomplished = self.generic_callback.data_declare(False)
         self.goal_reached = self.generic_callback.data_declare(False)
-        self.following_ghost_waypoint = self.generic_callback.data_declare(True)
+        self.signalize_waypoint = self.generic_callback.data_declare(True)
         self.operation_mode = self.generic_callback.data_declare(999)
 
         self.last_goal_reached = False
@@ -152,7 +152,7 @@ class AutonomousStateMachineNode(Node):
         # Operation mode
         self.create_subscription(Bool,
                                  '/goal_manager/goal/sinalization',
-                                 self.generic_callback.callback(self.following_ghost_waypoint),
+                                 self.generic_callback.callback(self.signalize_waypoint),
                                  qos_profile)
         
         # Mission accomplished
@@ -305,7 +305,7 @@ class AutonomousStateMachineNode(Node):
 
         no_more_waypoints_ros = self.generic_callback.get(self.mission_accomplished)
         goal_reached_ros = self.generic_callback.get(self.goal_reached)
-        following_ghost_waypoint_ros = self.generic_callback.get(self.following_ghost_waypoint)
+        signalize_waypoint_ros = self.generic_callback.get(self.signalize_waypoint)
         autonomous_mode_ros = self.generic_callback.get(self.operation_mode)
 
 
@@ -319,12 +319,14 @@ class AutonomousStateMachineNode(Node):
         autonomous_mode = (autonomous_mode_ros == self.operation_mode_AUTONOMOUS) 
         paused = not autonomous_mode
 
+        following_ghost_waypoint = not signalize_waypoint_ros
+
         # -------------------------------------
         #    Machine State Input
         # -------------------------------------
 
         self.state_machine.no_more_waypoints = no_more_waypoints_ros
-        self.state_machine.following_ghost_waypoint = following_ghost_waypoint_ros
+        self.state_machine.following_ghost_waypoint = following_ghost_waypoint
         self.state_machine.at_waypoint = goal_reached_rising_edge
         self.state_machine.paused = paused
         
