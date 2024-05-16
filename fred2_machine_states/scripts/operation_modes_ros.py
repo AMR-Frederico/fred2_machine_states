@@ -131,8 +131,8 @@ class OperationModeNode(Node):
         # --------------------------------------------------------------------------------
 
         # set data getted from ROS2 callback
-        self.change_mode = GenericCallback.data_declare(False)
-        self.robot_safety = GenericCallback.data_declare(False)
+        self.change_mode = self.generic_callback.data_declare(False)
+        self.robot_safety = self.generic_callback.data_declare(False)
 
         self.last_change_mode = False
 
@@ -160,7 +160,7 @@ class OperationModeNode(Node):
         # --------------------------------------------------------------------------------
         #    Publishers
         # --------------------------------------------------------------------------------
-        self.operation_state_pub = self.create_publisher(Int16, 'robot_state', qos_profile) # suggestion: change name to operation_state
+        self.operation_state_pub = self.create_publisher(Int16, 'operation_mode', qos_profile) # previous 'robot_state' topic 
 
 
         self.add_on_set_parameters_callback(self.parameters_callback)
@@ -183,8 +183,9 @@ class OperationModeNode(Node):
             namespace='',
             parameters=[
                 ('emergency', 0, ParameterDescriptor(description='Index for EMERGENCY state', type=ParameterType.PARAMETER_INTEGER)),
-                ('manual', 10, ParameterDescriptor(description='Index for MANUAL state', type=ParameterType.PARAMETER_INTEGER)),
-                ('autonomous', 20, ParameterDescriptor(description='Index for AUTONOMOUS state', type=ParameterType.PARAMETER_INTEGER)),
+                ('init', 10, ParameterDescriptor(description='Index for INIT state', type=ParameterType.PARAMETER_INTEGER)),
+                ('manual', 20, ParameterDescriptor(description='Index for MANUAL state', type=ParameterType.PARAMETER_INTEGER)),
+                ('autonomous', 30, ParameterDescriptor(description='Index for AUTONOMOUS state', type=ParameterType.PARAMETER_INTEGER)),
                 ('debug', False, ParameterDescriptor(description='Enable debug prints', type=ParameterType.PARAMETER_BOOL))
             ]
         )
@@ -302,8 +303,7 @@ class OperationModeNode(Node):
         # -------------------------------------
 
         self.publish_mode()
-        if debug_mode: 
-            self.get_logger().info(f"State: {self.state_machine.state}, robot safe: {robot_safe}, change_mode_rising_edge: {change_mode_rising_edge}")
+        self.get_logger().info(f"State: {self.state_machine.state}, robot safe: {robot_safe}, change_mode_rising_edge: {change_mode_rising_edge}")
 
 
         # -------------------------------------
@@ -323,10 +323,10 @@ if __name__ == '__main__':
     states_context.use_real_time = True
 
     node = OperationModeNode(
-        node_name='main_robot',
+        node_name='operation_modes',
         cli_args='--debug',
         context=states_context,
-        namespace='machine_states',
+        namespace='main_robot',
         start_parameter_services=True
     )
 
@@ -342,8 +342,8 @@ if __name__ == '__main__':
 
     try:
         while rclpy.ok():
-            node.machine_states()
             rate.sleep()
+            node.machine_states()
 
     except KeyboardInterrupt:
         pass

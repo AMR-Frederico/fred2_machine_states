@@ -12,3 +12,14 @@
     # Debug/test 
     use_sim_time: false         # Use simulation time 
     debug: false                # Enable debug prints 
+
+/autonomous_state:
+  ros__parameters:
+
+    # Robot states 
+    init: 0                     
+    moving_to_goal: 10          
+    at_waypoint: 20             
+    at_ghost_waypoint: 30       
+    mission_accomplished: 40         
+    robot_stuck: 50        

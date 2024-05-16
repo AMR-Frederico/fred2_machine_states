@@ -13,6 +13,7 @@ from rclpy.parameter import Parameter, ParameterType
 from rclpy.qos import QoSPresetProfiles, QoSProfile, QoSHistoryPolicy, QoSLivelinessPolicy, QoSReliabilityPolicy, QoSDurabilityPolicy
 
 from rcl_interfaces.msg import SetParametersResult
+from rcl_interfaces.srv import GetParameters
 
 from std_msgs.msg import Bool, Int16
 
@@ -33,16 +34,15 @@ debug_mode = '--debug' in sys.argv
 class GenericCallback():
 
 
-    def callback(self, ref, default_value, callback_1= None, callback_2= None, callback_3= None):
+    def callback(self, ref, callback_1= None, callback_2= None, callback_3= None):
 
-        ref['value'] = default_value
         return lambda msg: [self._set(ref, msg.data), 
                             self._execute_if_not_none(callback_1), 
                             self._execute_if_not_none(callback_2), 
                             self._execute_if_not_none(callback_3)]
 
 
-    def data_declare(self, default_value = {}):
+    def data_declare(self, default_value = None):
         """Create dict compatible with generic callback
 
         Args:
@@ -77,7 +77,7 @@ class GenericCallback():
 # --------------------------------------------------------------------------------
 #    Node setup
 # --------------------------------------------------------------------------------
-class OperationModeNode(Node):
+class AutonomousStateMachineNode(Node):
 
             
     def __init__(self,
@@ -119,47 +119,61 @@ class OperationModeNode(Node):
 
 
         # handle parameters
-        # self.load_ros_param()
-        # self.get_ros_params()
+        self.load_ros_param()
+        self.get_ros_params()
 
         self.generic_callback = GenericCallback() 
+
 
         # --------------------------------------------------------------------------------
         #    Class parameters
         # --------------------------------------------------------------------------------
 
         # set data getted from ROS2 callback
-        self.mission_accomplished = GenericCallback.data_declare(False)
-        self.goal_reached = GenericCallback.data_declare(False)
-        self.following_ghost_waypoint = GenericCallback.data_declare(False)
+        self.mission_accomplished = self.generic_callback.data_declare(False)
+        self.goal_reached = self.generic_callback.data_declare(False)
+        self.following_ghost_waypoint = self.generic_callback.data_declare(True)
+        self.operation_mode = self.generic_callback.data_declare(999)
 
         self.last_goal_reached = False
 
         self.state_machine = AutonomousStateMachine()
 
+        self.operation_mode_INIT = None
+        self.operation_mode_EMERGENCY = None
+        self.operation_mode_MANUAL = None
+        self.operation_mode_AUTONOMOUS = None
+        self.get_global_parameters()
 
         # --------------------------------------------------------------------------------
         #    Subscribers
         # --------------------------------------------------------------------------------
 
+        # Operation mode
+        self.create_subscription(Bool,
+                                 '/goal_manager/goal/sinalization',
+                                 self.generic_callback.callback(self.following_ghost_waypoint),
+                                 qos_profile)
+        
         # Mission accomplished
         self.create_subscription(Bool,
                                  '/goal_manager/goal/mission_completed',
-                                 self.generic_callback.callback(self.mission_accomplished, False),
+                                 self.generic_callback.callback(self.mission_accomplished),
                                  qos_profile)
 
         # Goal reached
         self.create_subscription(Bool,
                                  '/goal_manager/goal/reached',
-                                 self.generic_callback.callback(self.goal_reached, False),
+                                 self.generic_callback.callback(self.goal_reached),
                                  qos_profile)
         
-        # Ghost waypoint
-        self.create_subscription(Bool,
-                                 '/goal_manager/goal/sinalization',
-                                 self.generic_callback.callback(self.following_ghost_waypoint, True),
+        # Operation mode
+        self.create_subscription(Int16,
+                                 '/main_robot/operation_mode',
+                                 self.generic_callback.callback(self.operation_mode),
                                  qos_profile)
 
+    
 
 
         # --------------------------------------------------------------------------------
@@ -168,92 +182,109 @@ class OperationModeNode(Node):
         self.autonomous_state_pub = self.create_publisher(Int16, 'autonomous_state', qos_profile)
 
 
-        self.add_on_set_parameters_callback(self.parameters_callback)
+        # self.add_on_set_parameters_callback(self.parameters_callback)
 
 
 
     # --------------------------------------------------------------------------------
     #    Class Functions
     # --------------------------------------------------------------------------------
+   
+    def get_global_parameters(self):
+
+        self.client = self.create_client(GetParameters, '/main_robot/operation_modes/get_parameters')
+        self.client.wait_for_service()
+
+        request = GetParameters.Request()
+        request.names = ['manual', 'autonomous', 'emergency']
+
+        future = self.client.call_async(request)
+        future.add_done_callback(self.callback_get_global_param)
+        
+        
+
     
-    # def load_ros_param(self):
+    def callback_get_global_param(self, future):
+
+
+        try:
+
+            result = future.result()
+
+            self.operation_mode_MANUAL = result.values[0].integer_value
+            self.operation_mode_AUTONOMOUS = result.values[1].integer_value
+            self.operation_mode_EMERGENCY = result.values[2].integer_value
+
+
+        except Exception as e:
+
+            self.get_logger().warn("Service call failed %r" % (e,))
+
+    def load_ros_param(self):
     
-    #     """Load params from to ROS param server 
-    #     """
+        """Load params from to ROS param server 
+        """
         
-    #     # Declare parameters related to robot states and debug/testing
-    #     self.declare_parameters(
-    #         namespace='',
-    #         parameters=[
-    #             ('emergency', 0, ParameterDescriptor(description='Index for EMERGENCY state', type=ParameterType.PARAMETER_INTEGER)),
-    #             ('manual', 10, ParameterDescriptor(description='Index for MANUAL state', type=ParameterType.PARAMETER_INTEGER)),
-    #             ('autonomous', 20, ParameterDescriptor(description='Index for AUTONOMOUS state', type=ParameterType.PARAMETER_INTEGER)),
-    #             ('debug', False, ParameterDescriptor(description='Enable debug prints', type=ParameterType.PARAMETER_BOOL))
-    #         ]
-    #     )
+        # Declare parameters related to robot states and debug/testing
+        self.declare_parameters(
+            namespace='',
+            parameters=[
+                ('init', 0, ParameterDescriptor(description='Index for INIT state', type=ParameterType.PARAMETER_INTEGER)),
+                ('moving_to_goal', 10, ParameterDescriptor(description='Index for MOVING_TO_GOAL state', type=ParameterType.PARAMETER_INTEGER)),
+                ('at_waypoint', 20, ParameterDescriptor(description='Index for AT_WAYPOINT state', type=ParameterType.PARAMETER_INTEGER)),
+                ('at_ghost_waypoint', 30, ParameterDescriptor(description='Index for AT_GHOST_WAYPOINT state', type=ParameterType.PARAMETER_INTEGER)),
+                ('mission_accomplished', 40, ParameterDescriptor(description='Index for MISSION_ACCOMPLISHED state', type=ParameterType.PARAMETER_INTEGER)),
+                ('robot_stuck', 50, ParameterDescriptor(description='Index for ROBOT_STUCK state', type=ParameterType.PARAMETER_INTEGER)),
+                ('debug', False, ParameterDescriptor(description='Enable debug prints', type=ParameterType.PARAMETER_BOOL))
+            ]
+        )
 
-    #     self.get_logger().info('All parameters set successfully')
+        self.get_logger().info('All parameters set successfully')
 
 
-    # def get_ros_params(self):
+    def get_ros_params(self):
         
-    #     """Load params from ros param server to internal class
-    #     """
-    #     self.MANUAL = self.get_parameter('manual').value
-    #     self.AUTONOMOUS = self.get_parameter('autonomous').value
-    #     self.EMERGENCY = self.get_parameter('emergency').value
-    #     self.DEBUG = self.get_parameter('debug').value
+        """Load params from ros param server to internal class
+        """
+        self.INIT =                 self.get_parameter('init').value
+        self.MOVING_TO_GOAL =       self.get_parameter('moving_to_goal').value
+        self.AT_WAYPOINT =          self.get_parameter('at_waypoint').value
+        self.AT_GHOST_WAYPOINT =    self.get_parameter('at_ghost_waypoint').value
+        self.MISSION_ACCOMPLISHED = self.get_parameter('mission_accomplished').value
+        self.ROBOT_STUCK =          self.get_parameter('robot_stuck').value
+        self.DEBUG =                self.get_parameter('debug').value
 
 
-    #     self.robot_mode = self.MANUAL     # Starts in MANUAL mode 
+        self.robot_mode = self.INIT     # Starts in MANUAL mode 
 
 
+    def publish_state(self):
 
+        self.state_msg = Int16()
+        data = 999
 
+        match self.state_machine.state:
 
-    # def parameters_callback(self, params):
-        
-    #     for param in params:
-    #         self.get_logger().info(f"Parameter '{param.name}' changed to: {param.value}")
+            case AutonomousStates.INIT:
+                data = self.INIT
 
-    #         if param.name == 'manual':
-    #             self.MANUAL = param.value
+            case AutonomousStates.MOVING_TO_GOAL:
+                data = self.MOVING_TO_GOAL
 
-    #         elif param.name == 'autonomous':
-    #             self.AUTONOMOUS = param.value
+            case AutonomousStates.AT_WAYPOINT:
+                data = self.AT_WAYPOINT
 
-    #         elif param.name == 'emergency':
-    #             self.EMERGENCY = param.value
-            
-    #         elif param.name == 'debug': 
-    #             self.DEBUG = param.name
+            case AutonomousStates.AT_GHOST_WAYPOINT:
+                data = self.AT_GHOST_WAYPOINT
 
-    #     return SetParametersResult(successful=True)
+            case AutonomousStates.MISSION_ACCOMPLISHED:
+                data = self.MISSION_ACCOMPLISHED
 
+            case AutonomousStates.ROBOT_STUCK:
+                data = self.ROBOT_STUCK
 
-
-    # def publish_state(self):
-
-    #     self.autonomous_state_msg = Int16()
-    #     data = 0
-
-    #     match self.state_machine.state:
-
-    #         case AutonomousStates.INIT:
-    #             data = self.DEBUG
-
-    #         case AutonomousStates.:
-    #             data = self.MANUAL
-
-    #         case AutonomousStates.AUTONOMOUS_MODE:
-    #             data = self.AUTONOMOUS
-
-    #         case AutonomousStates.EMERGENCY_MODE:
-    #             data = self.EMERGENCY
-
-    #     self.operation_mode_msg.data = data
-    #     self.operation_state_pub.publish(self.operation_mode_msg)
-
+        self.state_msg.data = data
+        self.autonomous_state_pub.publish(self.state_msg)
 
 
     # --------------------------------------------------------------------------------
@@ -270,6 +301,7 @@ class OperationModeNode(Node):
         no_more_waypoints_ros = self.generic_callback.get(self.mission_accomplished)
         goal_reached_ros = self.generic_callback.get(self.goal_reached)
         following_ghost_waypoint_ros = self.generic_callback.get(self.following_ghost_waypoint)
+        autonomous_mode_ros = self.generic_callback.get(self.operation_mode)
 
 
         # -------------------------------------
@@ -279,6 +311,7 @@ class OperationModeNode(Node):
         # detect change mode rising edge
         goal_reached_rising_edge = (goal_reached_ros >  self.last_goal_reached) # add sensors
 
+        autonomous_mode = (autonomous_mode_ros == self.operation_mode_AUTONOMOUS) 
 
         # -------------------------------------
         #    Machine State Input
@@ -286,24 +319,24 @@ class OperationModeNode(Node):
 
         self.state_machine.no_more_waypoints = no_more_waypoints_ros
         self.state_machine.following_ghost_waypoint = following_ghost_waypoint_ros
-        self.state_machine.following_ghost_waypoint = following_ghost_waypoint_ros
-
-        self.state_machine.routine()
+        self.state_machine.at_waypoint = goal_reached_rising_edge
+        
+        if autonomous_mode: 
+            self.state_machine.routine()
 
         # -------------------------------------
         #    Output
         # -------------------------------------
 
-        # self.publish_mode()
-        # if debug_mode: 
-        #     self.get_logger().info(f"State: {self.state_machine.state}, robot safe: {robot_safe}, change_mode_rising_edge: {change_mode_rising_edge}")
-
+        self.publish_state()
 
         # -------------------------------------
         #    Handle internal variables
         # -------------------------------------
 
         self.last_goal_reached = goal_reached_ros
+
+        self.get_logger().info(f"State: {self.state_machine.state}, autonomous_mode_ros: {autonomous_mode_ros}, operation_mode_AUTONOMOUS: {self.operation_mode_AUTONOMOUS}")
 
 
 
@@ -315,11 +348,11 @@ if __name__ == '__main__':
     states_context.init()
     states_context.use_real_time = True
 
-    node = OperationModeNode(
-        node_name='main_robot',
+    node = AutonomousStateMachineNode(
+        node_name='autonomous_state_machine',
         cli_args='--debug',
         context=states_context,
-        namespace='machine_states',
+        namespace='main_robot',
         start_parameter_services=True
     )
 
