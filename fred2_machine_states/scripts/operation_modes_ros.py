@@ -44,7 +44,7 @@ class GenericCallback():
                             self._execute_if_not_none(callback_3)]
 
 
-    def data_declare(self, default_value = {}):
+    def data_declare(self, default_value = None):
         """Create dict compatible with generic callback
 
         Args:
@@ -303,6 +303,7 @@ class OperationModeNode(Node):
         # -------------------------------------
 
         self.publish_mode()
+        # self.get_logger().info(f"robot safe: {robot_safe_ros}, robot_unsafe_timer_triggered: {robot_unsafe_timer_triggered}")
         self.get_logger().info(f"State: {self.state_machine.state}, robot safe: {robot_safe}, change_mode_rising_edge: {change_mode_rising_edge}")
 
 
