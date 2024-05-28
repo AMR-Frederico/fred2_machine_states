@@ -15,7 +15,7 @@ from rclpy.qos import QoSPresetProfiles, QoSProfile, QoSHistoryPolicy, QoSLiveli
 from rcl_interfaces.msg import SetParametersResult
 from rcl_interfaces.srv import GetParameters
 
-from std_msgs.msg import Bool, Int16
+from std_msgs.msg import Bool, Int16, ColorRGBA
 
 from autonomous_state_machine import AutonomousStateMachine, AutonomousStates
 
@@ -145,6 +145,10 @@ class AutonomousStateMachineNode(Node):
         self.operation_mode_AUTONOMOUS = None
         self.get_global_parameters()
 
+        # sensors (suggestion: create another node called position sensors)
+        self.inductive_sensor = None
+        self.color_sensor = None
+
         # --------------------------------------------------------------------------------
         #    Subscribers
         # --------------------------------------------------------------------------------
@@ -171,6 +175,23 @@ class AutonomousStateMachineNode(Node):
         self.create_subscription(Int16,
                                  '/main_robot/operation_mode',
                                  self.generic_callback.callback(self.operation_mode),
+                                 qos_profile)
+
+
+        # -------------------------------------
+        #    Sensors subscribers
+        # -------------------------------------
+
+        # Inductive sensor
+        self.create_subscription(Bool,
+                                 '/sensors/inductive',
+                                 self.generic_callback.callback(self.inductive_sensor),
+                                 qos_profile)
+        
+        # Color sensor
+        self.create_subscription(ColorRGBA,
+                                 '/sensors/color',
+                                 self.generic_callback.callback(self.color_sensor),
                                  qos_profile)
 
     

@@ -6,7 +6,6 @@ def create_state_machine():
     return OperationModesStateMachine(lambda: print("State Machine started"))
 
 
-
 def test_init():
 
     state_machine = create_state_machine()
@@ -16,7 +15,6 @@ def test_init():
 def test_started():
 
     state_machine = create_state_machine()
-
 
     state_machine.robot_safety = True
     state_machine.switch_mode = False
