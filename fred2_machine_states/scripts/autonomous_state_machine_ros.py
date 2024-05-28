@@ -316,7 +316,17 @@ class AutonomousStateMachineNode(Node):
 
     def check_if_at_waypoint(self, goal_reached):
         
+        odom_gain = 1
+        color_sensor_gain = 1
+        inductive_sensor_gain = 1
+
+        # bool to value
+        
+        
+        
         result = goal_reached
+
+
         # get sensors and goal reached
         # do something math with parameters
         # decide if in waypoint
@@ -338,6 +348,10 @@ class AutonomousStateMachineNode(Node):
         goal_reached_ros = self.generic_callback.get(self.goal_reached)
         signalize_waypoint_ros = self.generic_callback.get(self.signalize_waypoint)
         autonomous_mode_ros = self.generic_callback.get(self.operation_mode)
+
+        # sensors
+        color_sensor_ros = self.generic_callback.get(self.color_sensor)
+        inductive_sensor_ros = self.generic_callback.get(self.inductive_sensor)
 
 
         # -------------------------------------
