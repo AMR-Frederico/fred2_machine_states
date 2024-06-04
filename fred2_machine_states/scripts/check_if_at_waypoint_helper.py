@@ -31,44 +31,76 @@ class Names(Enum):
     Y_100 = "y 100%"
     Y_0 = "y 0%"
 
-in_distance_waypoint_odom = ctrl.Antecedent(np.arange(0, 100, 0.1), Names.D_WAYPOINT_ODOM)
-in_inductive_signal = ctrl.Antecedent(np.arange(0, 2, 1), Names.INDUCTIVE_SIGNAL)
-in_color_signal = ctrl.Antecedent(np.arange(0, 2, 0.01), Names.COLOR_SIGNAL)
+class SensorsFuzzySystem():
 
-out_at_waypoint = ctrl.Consequent(np.arange(0, 100, 1), Names.AT_WAYPOINT)
-
-# automf(Ok, ... , Not Ok)
-in_distance_waypoint_odom.automf(number=3, names=[Names.AT, Names.NEAR, Names.FAR])
-in_inductive_signal.automf(number=2, names=[Names.METAL, Names.NOT_METAL])
-in_color_signal.automf(number=2, names=[Names.Y_100, Names.Y_0])
-
-out_at_waypoint[Names.FAR] = fuzz.trimf(out_at_waypoint.universe, [0, 25, 50])
-out_at_waypoint[Names.NEAR] = fuzz.trimf(out_at_waypoint.universe, [25, 50, 75])
-out_at_waypoint[Names.AT] = fuzz.trimf(out_at_waypoint.universe, [50, 75, 100])
+    def __init__(self):
+        
+        self._create_fuzzy_system()
 
 
-# in_distance_waypoint_odom.view()
-# in_inductive_signal.view()
-# in_color_signal.view()
+    def set_rules(self):
+        
+        self.rules = []
 
-rules = []
+        self.rules.append(ctrl.Rule(self.in_distance_waypoint_odom[Names.AT] and self.in_inductive_signal[Names.METAL], self.out_at_waypoint[Names.AT]))
+        self.rules.append(ctrl.Rule(self.in_distance_waypoint_odom[Names.NEAR] and self.in_inductive_signal[Names.METAL], self.out_at_waypoint[Names.AT]))
+        self.rules.append(ctrl.Rule(self.in_distance_waypoint_odom[Names.FAR] and self.in_inductive_signal[Names.METAL], self.out_at_waypoint[Names.FAR]))
+        self.rules.append(ctrl.Rule(self.in_distance_waypoint_odom[Names.AT] and self.in_inductive_signal[Names.NOT_METAL], self.out_at_waypoint[Names.NEAR]))
+        self.rules.append(ctrl.Rule(self.in_distance_waypoint_odom[Names.NEAR] and self.in_inductive_signal[Names.NOT_METAL], self.out_at_waypoint[Names.FAR]))
+        self.rules.append(ctrl.Rule(self.in_distance_waypoint_odom[Names.FAR] and self.in_inductive_signal[Names.NOT_METAL], self.out_at_waypoint[Names.FAR]))
 
-rules.append(ctrl.Rule(in_distance_waypoint_odom[Names.AT] and in_inductive_signal[Names.METAL], out_at_waypoint[Names.AT]))
-rules.append(ctrl.Rule(in_distance_waypoint_odom[Names.NEAR] and in_inductive_signal[Names.METAL], out_at_waypoint[Names.AT]))
-rules.append(ctrl.Rule(in_distance_waypoint_odom[Names.FAR] and in_inductive_signal[Names.METAL], out_at_waypoint[Names.FAR]))
-rules.append(ctrl.Rule(in_distance_waypoint_odom[Names.AT] and in_inductive_signal[Names.NOT_METAL], out_at_waypoint[Names.NEAR]))
-rules.append(ctrl.Rule(in_distance_waypoint_odom[Names.NEAR] and in_inductive_signal[Names.NOT_METAL], out_at_waypoint[Names.FAR]))
-rules.append(ctrl.Rule(in_distance_waypoint_odom[Names.FAR] and in_inductive_signal[Names.NOT_METAL], out_at_waypoint[Names.FAR]))
 
-# out_at_waypoint.view()
+    def decide(self, inductive_read, color_read, odom_distance):
 
-# at_waypoint_system = ctrl.ControlSystem(rules)
+        at_waypoint_system = ctrl.ControlSystem(self.rules)
 
-# at_waypoint = ctrl.ControlSystemSimulation(at_waypoint_system)
-r = ctrl.Rule(in_distance_waypoint_odom[Names.AT] and in_inductive_signal[Names.METAL], out_at_waypoint[Names.AT])
-r.view()
+        at_waypoint = ctrl.ControlSystemSimulation(at_waypoint_system)
+        at_waypoint[Names.INDUCTIVE_SIGNAL] = inductive_read
+        at_waypoint[Names.COLOR_SIGNAL] = color_read
+        at_waypoint[Names.D_WAYPOINT_ODOM] = odom_distance
 
-input("Wait")
+        at_waypoint.compute()
+
+        # (debug)
+        print(at_waypoint.output[Names.AT_WAYPOINT])
+        self.out_at_waypoint.view(sim=at_waypoint)
+
+        return at_waypoint.output[Names.AT_WAYPOINT]
+
+
+    def _create_fuzzy_system(self):
+
+        self._define_antecedent()
+        self._define_consequent()
+        self._populate_universe()
+
+
+    def _define_antecedent(self):
+
+        self.in_distance_waypoint_odom = ctrl.Antecedent(np.arange(0, 100, 0.1), Names.D_WAYPOINT_ODOM)
+        self.in_inductive_signal = ctrl.Antecedent(np.arange(0, 2, 1), Names.INDUCTIVE_SIGNAL)
+        self.in_color_signal = ctrl.Antecedent(np.arange(0, 2, 0.01), Names.COLOR_SIGNAL)
+
+
+    def _define_consequent(self):
+        
+        self.out_at_waypoint = ctrl.Consequent(np.arange(0, 100, 1), Names.AT_WAYPOINT)
+
+
+    def _populate_universe(self):
+
+        # automf(Ok, ... , Not Ok)
+        self.in_distance_waypoint_odom.automf(number=3, names=[Names.AT, Names.NEAR, Names.FAR])
+        self.in_inductive_signal.automf(number=2, names=[Names.METAL, Names.NOT_METAL])
+        self.in_color_signal.automf(number=2, names=[Names.Y_100, Names.Y_0])
+
+        self.out_at_waypoint[Names.FAR] = fuzz.trimf(self.out_at_waypoint.universe, [0, 0, 50])
+        self.out_at_waypoint[Names.NEAR] = fuzz.trimf(self.out_at_waypoint.universe, [0, 50, 100])
+        self.out_at_waypoint[Names.AT] = fuzz.trimf(self.out_at_waypoint.universe, [50, 100, 100])
+
+
+
+
 
 def color_to_value(color):
 
