@@ -81,30 +81,30 @@ class AutonomousStateMachineNode(Node):
 
             
     def __init__(self,
-                 node_name: str,
-                 *,
-                 context:
-                 Context = None,
-                 cli_args: List[str] = None,
-                 namespace: str = None,
-                 use_global_arguments: bool = True,
-                 enable_rosout: bool = True,
-                 start_parameter_services: bool = True,
-                 parameter_overrides: List[Parameter] = None,
-                 allow_undeclared_parameters: bool = False,
-                 automatically_declare_parameters_from_overrides: bool = False) -> None:
+                node_name: str,
+                *,
+                context:
+                Context = None,
+                cli_args: List[str] = None,
+                namespace: str = None,
+                use_global_arguments: bool = True,
+                enable_rosout: bool = True,
+                start_parameter_services: bool = True,
+                parameter_overrides: List[Parameter] = None,
+                allow_undeclared_parameters: bool = False,
+                automatically_declare_parameters_from_overrides: bool = False) -> None:
 
 
         super().__init__(node_name,
-                         context=context,
-                         cli_args=cli_args,
-                         namespace=namespace,
-                         use_global_arguments=use_global_arguments,
-                         enable_rosout=enable_rosout,
-                         start_parameter_services=start_parameter_services,
-                         parameter_overrides=parameter_overrides,
-                         allow_undeclared_parameters=allow_undeclared_parameters,
-                         automatically_declare_parameters_from_overrides=automatically_declare_parameters_from_overrides)
+                        context=context,
+                        cli_args=cli_args,
+                        namespace=namespace,
+                        use_global_arguments=use_global_arguments,
+                        enable_rosout=enable_rosout,
+                        start_parameter_services=start_parameter_services,
+                        parameter_overrides=parameter_overrides,
+                        allow_undeclared_parameters=allow_undeclared_parameters,
+                        automatically_declare_parameters_from_overrides=automatically_declare_parameters_from_overrides)
 
 
         # quality protocol -> the node must not lose any message 
@@ -149,33 +149,36 @@ class AutonomousStateMachineNode(Node):
         self.inductive_sensor = None
         self.color_sensor = None
 
+        self.color_sensor = self.generic_callback.data_declare(default_value=ColorRGBA())  # Initialize with default value
+        self.inductive_sensor = self.generic_callback.data_declare(default_value=Bool())  # Initialize with default value
+
         # --------------------------------------------------------------------------------
         #    Subscribers
         # --------------------------------------------------------------------------------
 
         # Operation mode
         self.create_subscription(Bool,
-                                 '/goal_manager/goal/sinalization',
-                                 self.generic_callback.callback(self.signalize_waypoint),
-                                 qos_profile)
+                                '/goal_manager/goal/sinalization',
+                                self.generic_callback.callback(self.signalize_waypoint),
+                                qos_profile)
         
         # Mission accomplished
         self.create_subscription(Bool,
-                                 '/goal_manager/goal/mission_completed',
-                                 self.generic_callback.callback(self.mission_accomplished),
-                                 qos_profile)
+                                '/goal_manager/goal/mission_completed',
+                                self.generic_callback.callback(self.mission_accomplished),
+                                qos_profile)
 
         # Goal reached
         self.create_subscription(Bool,
-                                 '/goal_manager/goal/reached',
-                                 self.generic_callback.callback(self.goal_reached),
-                                 qos_profile)
+                                '/goal_manager/goal/reached',
+                                self.generic_callback.callback(self.goal_reached),
+                                qos_profile)
         
         # Operation mode
         self.create_subscription(Int16,
-                                 '/main_robot/operation_mode',
-                                 self.generic_callback.callback(self.operation_mode),
-                                 qos_profile)
+                                '/main_robot/operation_mode',
+                                self.generic_callback.callback(self.operation_mode),
+                                qos_profile)
 
 
         # -------------------------------------
@@ -184,15 +187,15 @@ class AutonomousStateMachineNode(Node):
 
         # Inductive sensor
         self.create_subscription(Bool,
-                                 '/sensors/inductive',
-                                 self.generic_callback.callback(self.inductive_sensor),
-                                 qos_profile)
+                                '/sensors/inductive',
+                                self.generic_callback.callback(self.inductive_sensor),
+                                qos_profile)
         
         # Color sensor
         self.create_subscription(ColorRGBA,
-                                 '/sensors/color',
-                                 self.generic_callback.callback(self.color_sensor),
-                                 qos_profile)
+                                '/sensors/color',
+                                self.generic_callback.callback(self.color_sensor),
+                                qos_profile)
 
     
 
@@ -210,7 +213,7 @@ class AutonomousStateMachineNode(Node):
     # --------------------------------------------------------------------------------
     #    Class Functions
     # --------------------------------------------------------------------------------
-   
+
     def get_global_parameters(self):
 
         self.client = self.create_client(GetParameters, '/main_robot/operation_modes/get_parameters')
@@ -418,7 +421,7 @@ if __name__ == '__main__':
     thread = threading.Thread(target=rclpy.spin, args=(node,), daemon=True)
     thread.start()
 
-    rate = node.create_rate(10)
+    rate = node.create_rate(1)
 
     try:
         while rclpy.ok():

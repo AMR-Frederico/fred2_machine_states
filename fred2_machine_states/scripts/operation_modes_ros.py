@@ -160,7 +160,7 @@ class OperationModeNode(Node):
         # --------------------------------------------------------------------------------
         #    Publishers
         # --------------------------------------------------------------------------------
-        self.operation_state_pub = self.create_publisher(Int16, 'operation_mode', qos_profile) # previous 'robot_state' topic 
+        self.operation_state_pub = self.create_publisher(Int16, '/machine_states/robot_state', qos_profile) # previous 'robot_state' topic 
 
 
         self.add_on_set_parameters_callback(self.parameters_callback)
@@ -339,7 +339,7 @@ if __name__ == '__main__':
     thread = threading.Thread(target=rclpy.spin, args=(node,), daemon=True)
     thread.start()
 
-    rate = node.create_rate(10)
+    rate = node.create_rate(1)
 
     try:
         while rclpy.ok():
