@@ -197,16 +197,14 @@ class OperationModeNode(Node):
         
         """Load params from ros param server to internal class
         """
+        self.EMERGENCY = self.get_parameter('emergency').value
+        self.INIT = self.get_parameter('init').value
         self.MANUAL = self.get_parameter('manual').value
         self.AUTONOMOUS = self.get_parameter('autonomous').value
-        self.EMERGENCY = self.get_parameter('emergency').value
         self.DEBUG = self.get_parameter('debug').value
 
 
         self.robot_mode = self.MANUAL     # Starts in MANUAL mode 
-
-
-
 
 
     def parameters_callback(self, params):
@@ -214,14 +212,17 @@ class OperationModeNode(Node):
         for param in params:
             self.get_logger().info(f"Parameter '{param.name}' changed to: {param.value}")
 
-            if param.name == 'manual':
+            if param.name == 'emergency':
+                self.EMERGENCY = param.value
+            
+            elif param.name == 'init': 
+                self.INIT = param.value
+            
+            elif param.name == 'manual':
                 self.MANUAL = param.value
 
             elif param.name == 'autonomous':
                 self.AUTONOMOUS = param.value
-
-            elif param.name == 'emergency':
-                self.EMERGENCY = param.value
             
             elif param.name == 'debug': 
                 self.DEBUG = param.name
