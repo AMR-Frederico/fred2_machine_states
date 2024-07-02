@@ -36,34 +36,150 @@ class SensorsFuzzySystem():
     def __init__(self):
         
         self._create_fuzzy_system()
-
+        self.rules = []
 
     def set_rules(self):
         
-        self.rules = []
+        
 
-        self.rules.append(ctrl.Rule(self.in_distance_waypoint_odom[Names.AT] and self.in_inductive_signal[Names.METAL], self.out_at_waypoint[Names.AT]))
-        self.rules.append(ctrl.Rule(self.in_distance_waypoint_odom[Names.NEAR] and self.in_inductive_signal[Names.METAL], self.out_at_waypoint[Names.AT]))
-        self.rules.append(ctrl.Rule(self.in_distance_waypoint_odom[Names.FAR] and self.in_inductive_signal[Names.METAL], self.out_at_waypoint[Names.FAR]))
-        self.rules.append(ctrl.Rule(self.in_distance_waypoint_odom[Names.AT] and self.in_inductive_signal[Names.NOT_METAL], self.out_at_waypoint[Names.NEAR]))
-        self.rules.append(ctrl.Rule(self.in_distance_waypoint_odom[Names.NEAR] and self.in_inductive_signal[Names.NOT_METAL], self.out_at_waypoint[Names.FAR]))
-        self.rules.append(ctrl.Rule(self.in_distance_waypoint_odom[Names.FAR] and self.in_inductive_signal[Names.NOT_METAL], self.out_at_waypoint[Names.FAR]))
+        # at, metal, 0
+        self.rules.append(ctrl.Rule(self.in_distance_waypoint_odom[Names.AT] 
+                                    & self.in_inductive_signal[Names.METAL] 
+                                    & self.in_color_signal[Names.Y_0], 
+                                    self.out_at_waypoint[Names.AT]))
+        
+        # at, metal, 100
+        self.rules.append(ctrl.Rule(self.in_distance_waypoint_odom[Names.AT] 
+                                    & self.in_inductive_signal[Names.METAL] 
+                                    & self.in_color_signal[Names.Y_100],
+                                    self.out_at_waypoint[Names.AT]))
+        
+        # at, not metal, 0
+        self.rules.append(ctrl.Rule(self.in_distance_waypoint_odom[Names.AT] 
+                                    & self.in_inductive_signal[Names.NOT_METAL] 
+                                    & self.in_color_signal[Names.Y_0],
+                                    self.out_at_waypoint[Names.NEAR]))
+        
+        # at, not metal, 100
+        self.rules.append(ctrl.Rule(self.in_distance_waypoint_odom[Names.AT] 
+                                    & self.in_inductive_signal[Names.NOT_METAL] 
+                                    & self.in_color_signal[Names.Y_100],
+                                    self.out_at_waypoint[Names.NEAR]))
+        
+        # --------------------------------------------------------------------------------
+        #    NEAR
+        # --------------------------------------------------------------------------------
 
+        # near, metal, 100
+        self.rules.append(ctrl.Rule(self.in_distance_waypoint_odom[Names.NEAR] 
+                                    & self.in_inductive_signal[Names.METAL] 
+                                    & self.in_color_signal[Names.Y_100],
+                                    self.out_at_waypoint[Names.AT]))
+        
+        # near, not metal, 100
+        self.rules.append(ctrl.Rule(self.in_distance_waypoint_odom[Names.NEAR] 
+                                    & self.in_inductive_signal[Names.NOT_METAL] 
+                                    & self.in_color_signal[Names.Y_100],
+                                    self.out_at_waypoint[Names.NEAR]))
+        
+        # near, not metal, 0
+        self.rules.append(ctrl.Rule(self.in_distance_waypoint_odom[Names.NEAR] 
+                                    & self.in_inductive_signal[Names.NOT_METAL] 
+                                    & self.in_color_signal[Names.Y_0],
+                                    self.out_at_waypoint[Names.NEAR]))
 
-    def decide(self, inductive_read, color_read, odom_distance):
+        # near, metal, 0
+        self.rules.append(ctrl.Rule(self.in_distance_waypoint_odom[Names.NEAR] 
+                                    & self.in_inductive_signal[Names.METAL] 
+                                    & self.in_color_signal[Names.Y_0],
+                                    self.out_at_waypoint[Names.AT]))
+        
+        # --------------------------------------------------------------------------------
+        #    FAR
+        # --------------------------------------------------------------------------------
+
+        # far, metal, 100
+        self.rules.append(ctrl.Rule(self.in_distance_waypoint_odom[Names.FAR] 
+                                    & self.in_inductive_signal[Names.METAL] 
+                                    & self.in_color_signal[Names.Y_100],
+                                    self.out_at_waypoint[Names.FAR]))
+        
+        # far, metal, 0
+        self.rules.append(ctrl.Rule(self.in_distance_waypoint_odom[Names.FAR] 
+                                    & self.in_inductive_signal[Names.METAL] 
+                                    & self.in_color_signal[Names.Y_0],
+                                    self.out_at_waypoint[Names.FAR]))
+        
+        # far, not metal, 100
+        self.rules.append(ctrl.Rule(self.in_distance_waypoint_odom[Names.FAR] 
+                                    & self.in_inductive_signal[Names.NOT_METAL] 
+                                    & self.in_color_signal[Names.Y_100],
+                                    self.out_at_waypoint[Names.FAR]))
+        
+        # far, not metal, 0
+        self.rules.append(ctrl.Rule(self.in_distance_waypoint_odom[Names.FAR] 
+                                    & self.in_inductive_signal[Names.NOT_METAL] 
+                                    & self.in_color_signal[Names.Y_0],
+                                    self.out_at_waypoint[Names.FAR]))
+
+        # self.rules.append(ctrl.Rule(self.in_distance_waypoint_odom[Names.AT] 
+        #                             & self.in_inductive_signal[Names.METAL] 
+        #                             & self.in_color_signal[Names.Y_100],
+        #                             self.out_at_waypoint[Names.AT]))
+        
+        # self.rules.append(ctrl.Rule(self.in_distance_waypoint_odom[Names.NEAR] 
+        #                             & self.in_inductive_signal[Names.METAL], 
+        #                             self.out_at_waypoint[Names.AT]))
+
+        # # self.rules.append(ctrl.Rule(self.in_distance_waypoint_odom[Names.FAR] 
+        # #                             & self.in_inductive_signal[Names.METAL], 
+        # #                             self.out_at_waypoint[Names.FAR]))
+
+        # self.rules.append(ctrl.Rule(self.in_distance_waypoint_odom[Names.AT] 
+        #                             & self.in_inductive_signal[Names.NOT_METAL], 
+        #                             self.out_at_waypoint[Names.NEAR]))
+
+        # self.rules.append(ctrl.Rule(self.in_distance_waypoint_odom[Names.NEAR] 
+        #                             & self.in_inductive_signal[Names.NOT_METAL], 
+        #                             self.out_at_waypoint[Names.FAR]))
+
+        # self.rules.append(ctrl.Rule(self.in_distance_waypoint_odom[Names.FAR] 
+        #                             & self.in_inductive_signal[Names.NOT_METAL], 
+        #                             self.out_at_waypoint[Names.FAR]))
+
+        # self.rules.append(ctrl.Rule(self.in_color_signal[Names.Y_0] 
+        #                             & self.in_inductive_signal[Names.NOT_METAL], 
+        #                             self.out_at_waypoint[Names.FAR]))
+
+        
+
+    def decide(self, inductive_read, color_read, odom_distance, debug = False, debug_graph = False):
 
         at_waypoint_system = ctrl.ControlSystem(self.rules)
 
+        
+
         at_waypoint = ctrl.ControlSystemSimulation(at_waypoint_system)
-        at_waypoint[Names.INDUCTIVE_SIGNAL] = inductive_read
-        at_waypoint[Names.COLOR_SIGNAL] = color_read
-        at_waypoint[Names.D_WAYPOINT_ODOM] = odom_distance
+        
+        # for i in at_waypoint.input.sim.ctrl.antecedents:
+        #     print(i)
+        
+        at_waypoint.input[Names.INDUCTIVE_SIGNAL] = inductive_read
+        at_waypoint.input[Names.COLOR_SIGNAL] = color_read
+        at_waypoint.input[Names.D_WAYPOINT_ODOM] = odom_distance
 
         at_waypoint.compute()
 
         # (debug)
-        print(at_waypoint.output[Names.AT_WAYPOINT])
-        self.out_at_waypoint.view(sim=at_waypoint)
+        if(debug):
+            print(f"--------------------------------------------")
+            print(f"inductive_read: {inductive_read}")
+            print(f"color_read: {color_read}")
+            print(f"odom_distance: {odom_distance}")
+            print(at_waypoint.output[Names.AT_WAYPOINT])
+            if(debug_graph):
+                self.out_at_waypoint.view(sim=at_waypoint)
+                input()
 
         return at_waypoint.output[Names.AT_WAYPOINT]
 
@@ -77,9 +193,9 @@ class SensorsFuzzySystem():
 
     def _define_antecedent(self):
 
-        self.in_distance_waypoint_odom = ctrl.Antecedent(np.arange(0, 100, 0.1), Names.D_WAYPOINT_ODOM)
+        self.in_distance_waypoint_odom = ctrl.Antecedent(np.arange(0, 100.1, 0.1), Names.D_WAYPOINT_ODOM)
         self.in_inductive_signal = ctrl.Antecedent(np.arange(0, 2, 1), Names.INDUCTIVE_SIGNAL)
-        self.in_color_signal = ctrl.Antecedent(np.arange(0, 2, 0.01), Names.COLOR_SIGNAL)
+        self.in_color_signal = ctrl.Antecedent(np.arange(0, 2.01, 0.01), Names.COLOR_SIGNAL)
 
 
     def _define_consequent(self):
@@ -89,10 +205,10 @@ class SensorsFuzzySystem():
 
     def _populate_universe(self):
 
-        # automf(Ok, ... , Not Ok)
+        # automf(Ok, ... , Not Ok), Sera??
         self.in_distance_waypoint_odom.automf(number=3, names=[Names.AT, Names.NEAR, Names.FAR])
-        self.in_inductive_signal.automf(number=2, names=[Names.METAL, Names.NOT_METAL])
-        self.in_color_signal.automf(number=2, names=[Names.Y_100, Names.Y_0])
+        self.in_inductive_signal.automf(number=2, names=[Names.NOT_METAL, Names.METAL])
+        self.in_color_signal.automf(number=2, names=[Names.Y_0, Names.Y_100])
 
         self.out_at_waypoint[Names.FAR] = fuzz.trimf(self.out_at_waypoint.universe, [0, 0, 50])
         self.out_at_waypoint[Names.NEAR] = fuzz.trimf(self.out_at_waypoint.universe, [0, 50, 100])
@@ -136,3 +252,17 @@ def check_if_at_waypoint(goal_reached, color_sensor, inductive_sensor):
     result = odom_gain * odom_read + color_sensor_gain * color_read + inductive_sensor_gain * inductive_read
 
     return result
+
+if __name__ == "__main__":
+
+    fuzzy = SensorsFuzzySystem()
+    fuzzy.set_rules()
+    result = fuzzy.decide(0, 0, 0, True)
+    result = fuzzy.decide(1, 0, 0, True)
+    result = fuzzy.decide(0, 1, 0, True)
+    result = fuzzy.decide(1, 1, 0, True)
+
+    result = fuzzy.decide(0, 0, 99.99999, True)
+    result = fuzzy.decide(1, 0, 99.99999, True)
+    result = fuzzy.decide(0, 1, 99.99999, True)
+    result = fuzzy.decide(1, 1, 99.99999, True)
