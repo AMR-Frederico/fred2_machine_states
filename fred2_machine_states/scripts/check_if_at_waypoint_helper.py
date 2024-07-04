@@ -35,6 +35,9 @@ class SensorsFuzzySystem():
 
     def __init__(self):
         
+        self.in_distance_waypoint_odom = None
+        self.in_inductive_signal = None
+        self.in_color_signal = None
         self._create_fuzzy_system()
         self.rules = []
 
@@ -181,7 +184,7 @@ class SensorsFuzzySystem():
                 self.out_at_waypoint.view(sim=at_waypoint)
                 input()
 
-        return at_waypoint.output[Names.AT_WAYPOINT]
+        return at_waypoint.output[Names.AT_WAYPOINT.value]
 
 
     def _create_fuzzy_system(self):
@@ -200,7 +203,7 @@ class SensorsFuzzySystem():
 
     def _define_consequent(self):
         
-        self.out_at_waypoint = ctrl.Consequent(np.arange(0, 100, 1), Names.AT_WAYPOINT)
+        self.out_at_waypoint = ctrl.Consequent(np.arange(0, 101, 1), Names.AT_WAYPOINT.value)
 
 
     def _populate_universe(self):
@@ -210,9 +213,13 @@ class SensorsFuzzySystem():
         self.in_inductive_signal.automf(number=2, names=[Names.NOT_METAL, Names.METAL])
         self.in_color_signal.automf(number=2, names=[Names.Y_0, Names.Y_100])
 
-        self.out_at_waypoint[Names.FAR] = fuzz.trimf(self.out_at_waypoint.universe, [0, 0, 50])
-        self.out_at_waypoint[Names.NEAR] = fuzz.trimf(self.out_at_waypoint.universe, [0, 50, 100])
-        self.out_at_waypoint[Names.AT] = fuzz.trimf(self.out_at_waypoint.universe, [50, 100, 100])
+        self.in_distance_waypoint_odom.automf(number=3, names=[Names.FAR.value, Names.NEAR.value, Names.AT.value])
+        self.in_inductive_signal.automf(number=2, names=[Names.NOT_METAL.value, Names.METAL.value])
+        self.in_color_signal.automf(number=2, names=[Names.Y_0.value, Names.Y_100.value])
+
+        self.out_at_waypoint[Names.FAR.value] = fuzz.trimf(self.out_at_waypoint.universe, [0, 0, 50])
+        self.out_at_waypoint[Names.NEAR.value] = fuzz.trimf(self.out_at_waypoint.universe, [0, 50, 100])
+        self.out_at_waypoint[Names.AT.value] = fuzz.trimf(self.out_at_waypoint.universe, [50, 100, 100])
 
 
 
