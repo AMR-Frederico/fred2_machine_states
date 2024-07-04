@@ -340,7 +340,7 @@ if __name__ == '__main__':
     thread = threading.Thread(target=rclpy.spin, args=(node,), daemon=True)
     thread.start()
 
-    rate = node.create_rate(1)
+    rate = node.create_rate(6)
 
     try:
         while rclpy.ok():
