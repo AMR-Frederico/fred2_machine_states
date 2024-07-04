@@ -77,7 +77,7 @@ class OperationModesStateMachine():
 
             case OperationStates.INIT:
                 
-                if not self.initialized:
+                if self.initialized:
                     
                     self.state = OperationStates.MANUAL_MODE
 
