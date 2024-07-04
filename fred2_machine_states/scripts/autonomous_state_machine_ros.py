@@ -134,6 +134,7 @@ class AutonomousStateMachineNode(Node):
         self.goal_reached = self.generic_callback.data_declare(False)
         self.signalize_waypoint = self.generic_callback.data_declare(True)
         self.operation_mode = self.generic_callback.data_declare(999)
+        self.odom_reset = self.generic_callback.data_declare(False)
 
         self.last_goal_reached = False
 
@@ -156,6 +157,12 @@ class AutonomousStateMachineNode(Node):
         #    Subscribers
         # --------------------------------------------------------------------------------
 
+        # odom reset
+        self.create_subscription(Bool,
+                                '/odom/reset',
+                                self.generic_callback.callback(self.odom_reset),
+                                qos_profile)
+        
         # Operation mode
         self.create_subscription(Bool,
                                 '/goal_manager/goal/sinalization',
@@ -176,7 +183,7 @@ class AutonomousStateMachineNode(Node):
         
         # Operation mode
         self.create_subscription(Int16,
-                                '/main_robot/operation_mode',
+                                '/machine_states/robot_state',
                                 self.generic_callback.callback(self.operation_mode),
                                 qos_profile)
 
@@ -351,6 +358,7 @@ class AutonomousStateMachineNode(Node):
         goal_reached_ros = self.generic_callback.get(self.goal_reached)
         signalize_waypoint_ros = self.generic_callback.get(self.signalize_waypoint)
         autonomous_mode_ros = self.generic_callback.get(self.operation_mode)
+        odom_reset_ros = self.generic_callback.get(self.odom_reset)
 
         # sensors
         color_sensor_ros = self.generic_callback.get(self.color_sensor)
@@ -378,6 +386,7 @@ class AutonomousStateMachineNode(Node):
         self.state_machine.following_ghost_waypoint = following_ghost_waypoint
         self.state_machine.at_waypoint = at_waypoint
         self.state_machine.paused = paused
+        self.state_machine.odom_reset = odom_reset_ros
         
         self.state_machine.routine()
 
@@ -390,6 +399,9 @@ class AutonomousStateMachineNode(Node):
         # -------------------------------------
         #    Handle internal variables
         # -------------------------------------
+
+        # reset variables
+        self.state_machine.odom_reset = False
 
         self.last_goal_reached = goal_reached_ros
 
@@ -421,7 +433,7 @@ if __name__ == '__main__':
     thread = threading.Thread(target=rclpy.spin, args=(node,), daemon=True)
     thread.start()
 
-    rate = node.create_rate(1)
+    rate = node.create_rate(6)
 
     try:
         while rclpy.ok():
