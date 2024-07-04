@@ -14,6 +14,7 @@ class AutonomousStates(Enum):
     MISSION_ACCOMPLISHED = 40
     ROBOT_STUCK = 50
     PAUSED = 60
+    WAIT_RESET_ACK = 70
 
 
 def execute_if_not_none(function):
@@ -57,6 +58,7 @@ class AutonomousStateMachine():
         self.no_more_waypoints = False
         self.following_ghost_waypoint = False
         self.paused = False
+        self.odom_reset = False
 
         
 
@@ -150,7 +152,22 @@ class AutonomousStateMachine():
 
                 if not self.paused:
 
-                    self.state = self.last_state
+                    if self.last_state == AutonomousStates.WAIT_RESET_ACK:
+
+                        self.state = AutonomousStates.MOVING_TO_GOAL
+                    else:
+                    
+                        self.state = self.last_state
+
+            case AutonomousStates.MISSION_ACCOMPLISHED:
+
+                if self.odom_reset:
+
+                    self.state = AutonomousStates.WAIT_RESET_ACK
+
+            case AutonomousStates.WAIT_RESET_ACK:
+
+                pass
 
 
 
@@ -188,6 +205,8 @@ class AutonomousStateMachine():
             case AutonomousStates.ROBOT_STUCK:
 
                 execute_if_not_none(self.robot_stuck_callback)
+
+                
 
             
 
