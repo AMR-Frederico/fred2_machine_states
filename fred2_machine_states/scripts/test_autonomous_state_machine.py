@@ -29,6 +29,7 @@ def test_init_to_moving_to_goal():
     state_machine = create_state_machine()
 
     state_machine.routine()
+    state_machine.routine()
 
     assert state_machine.state == AutonomousStates.MOVING_TO_GOAL
 
@@ -64,6 +65,7 @@ def test_moving_to_at_waypoint():
 
     # init -> moving to goal
     state_machine.routine()
+    state_machine.routine()
 
     # moving to goal -> at waypoint
     state_machine.at_waypoint = True
@@ -77,6 +79,7 @@ def test_at_waypoint_callback():
     state_machine = create_state_machine()
 
     # init -> moving to goal
+    state_machine.routine()
     state_machine.routine()
 
     # moving to goal -> at waypoint
@@ -104,6 +107,7 @@ def test_moving_to_at_ghost_waypoint():
 
     # init -> moving to goal
     state_machine.routine()
+    state_machine.routine()
 
     # moving to goal -> at waypoint
     state_machine.at_waypoint = True
@@ -120,6 +124,7 @@ def test_at_ghost_waypoint_callback():
     state_machine = create_state_machine()
 
     # init -> moving to goal
+    state_machine.routine()
     state_machine.routine()
 
     # moving to goal -> at ghost waypoint
@@ -152,6 +157,7 @@ def test_at_waypoint_to_mission_accomplished():
 
     # init -> moving to goal
     state_machine.routine()
+    state_machine.routine()
 
     # moving to goal -> at waypoint
     state_machine.at_waypoint = True
@@ -170,6 +176,7 @@ def test_at_ghost_waypoint_to_mission_accomplished():
 
     # init -> moving to goal
     state_machine.routine()
+    state_machine.routine()
 
     # moving to goal -> at ghost waypoint
     state_machine.at_waypoint = True
@@ -182,6 +189,89 @@ def test_at_ghost_waypoint_to_mission_accomplished():
 
     assert state_machine.state == AutonomousStates.MISSION_ACCOMPLISHED
 
+def test_mission_accomplished_to_wait_reset_ack():
+
+    state_machine = create_state_machine()
+
+    # init -> moving to goal
+    state_machine.routine()
+    state_machine.routine()
+
+    # moving to goal -> at ghost waypoint
+    state_machine.at_waypoint = True
+    state_machine.following_ghost_waypoint = True
+    state_machine.no_more_waypoints = True
+    state_machine.routine()
+
+    # at ghost waypoint -> mission accomplished
+    state_machine.routine()
+
+    # mission accomplished -> paused
+    state_machine.odom_reset = True
+    state_machine.routine()
+
+    assert state_machine.state == AutonomousStates.WAIT_RESET_ACK
+
+
+def test_mission_accomplished_to_wait_ack_to_paused():
+
+    state_machine = create_state_machine()
+
+    # init -> moving to goal
+    state_machine.routine()
+    state_machine.routine()
+
+    # moving to goal -> at ghost waypoint
+    state_machine.at_waypoint = True
+    state_machine.following_ghost_waypoint = True
+    state_machine.no_more_waypoints = True
+    state_machine.routine()
+
+    # at ghost waypoint -> mission accomplished
+    state_machine.routine()
+
+    # mission accomplished -> WAIT
+    state_machine.odom_reset = True
+    state_machine.routine()
+
+    # wait reset ack -> paused
+    state_machine.paused = True
+    state_machine.routine()
+
+    assert state_machine.state == AutonomousStates.PAUSED
+
+
+def test_mission_accomplished_to_wait_ack_to_paused_to_goal():
+
+    state_machine = create_state_machine()
+
+    # init -> moving to goal
+    state_machine.routine()
+    state_machine.routine()
+
+    # moving to goal -> at ghost waypoint
+    state_machine.at_waypoint = True
+    state_machine.following_ghost_waypoint = True
+    state_machine.no_more_waypoints = True
+    state_machine.routine()
+
+    # at ghost waypoint -> mission accomplished
+    state_machine.routine()
+
+    # mission accomplished -> WAIT
+    state_machine.odom_reset = True
+    state_machine.routine()
+
+    # wait reset ack -> paused
+    state_machine.paused = True
+    state_machine.routine()
+
+    # paused -> goal
+    state_machine.paused = False
+    state_machine.routine()
+
+    assert state_machine.state == AutonomousStates.MOVING_TO_GOAL
+
 
 
 def test_mission_accomplished_callback():
@@ -189,6 +279,7 @@ def test_mission_accomplished_callback():
     state_machine = create_state_machine()
 
     # init -> moving to goal
+    state_machine.routine()
     state_machine.routine()
 
     
@@ -226,6 +317,7 @@ def test_moving_to_stuck():
 
     # init -> moving to goal
     state_machine.routine()
+    state_machine.routine()
 
     # moving to goal -> stuck
     state_machine.robot_stuck = True
@@ -240,6 +332,7 @@ def test_back_from_stuck():
     state_machine = create_state_machine()
 
     # init -> moving to goal
+    state_machine.routine()
     state_machine.routine()
 
     # moving to goal -> stuck
