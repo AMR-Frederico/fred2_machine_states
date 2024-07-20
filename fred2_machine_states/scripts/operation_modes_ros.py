@@ -24,7 +24,7 @@ debug_mode = '--debug' in sys.argv
 #    Constants
 # --------------------------------------------------------------------------------
 
-ROBOT_UNSAFE_TRIGGER_NANOSECONDS = 2e9
+ROBOT_UNSAFE_TRIGGER_NANOSECONDS = 11e9
 # ROBOT_UNSAFE_TRIGGER_NANOSECONDS = 11e9 # debug
 
 
@@ -134,7 +134,11 @@ class OperationModeNode(Node):
         self.change_mode = self.generic_callback.data_declare(False)
         self.robot_safety = self.generic_callback.data_declare(False)
 
+        self.competition_start_cmd = False
+        self.last_competition_start_cmd = False 
+
         self.last_change_mode = False
+        self.robot_start = False
 
         self.state_machine = OperationModesStateMachine()
 
@@ -155,6 +159,11 @@ class OperationModeNode(Node):
                                  self.generic_callback.callback(self.robot_safety, False, self.update_safe_time),
                                  qos_profile)
 
+        # Switch mode
+        self.create_subscription(Bool,
+                                 '/cmd/start_competition',
+                                 self.startCompetition_callback,
+                                 10)
 
 
         # --------------------------------------------------------------------------------
@@ -162,12 +171,45 @@ class OperationModeNode(Node):
         # --------------------------------------------------------------------------------
         self.operation_state_pub = self.create_publisher(Int16, '/machine_states/robot_state', qos_profile) # previous 'robot_state' topic 
 
+        self.led_pub = self.create_publisher(Int16, '/cmd/led_strip/color', qos_profile)
 
         self.add_on_set_parameters_callback(self.parameters_callback)
 
 
         self.last_safe_status_clock = self.get_clock().now()
 
+
+    def startCompetition_callback(self, msg): 
+
+        self.competition_start_cmd = msg.data
+        self.get_logger().info('comando recebido')
+
+        if self.competition_start_cmd > self.last_competition_start_cmd: 
+
+            self.get_logger().info('Iniciando timeout')
+            self.robot_start = True
+            self.cmd_time = self.get_clock().now()
+
+
+        
+        self.last_competition_start_cmd = self.competition_start_cmd
+
+
+    def start_transition_timeout(self): 
+
+        if self.robot_start: 
+
+            led_msg = Int16()
+            led_msg.data = 4
+
+            self.led_pub.publish(led_msg)
+
+            if (self.get_clock().now() - self.cmd_time).nanoseconds > 3e9:
+            
+                self.get_logger().info('Transição concluida')
+                self.state_machine.state = OperationStates.AUTONOMOUS_MODE
+                self.robot_start = False 
+                
 
     # --------------------------------------------------------------------------------
     #    Class Functions
@@ -265,6 +307,8 @@ class OperationModeNode(Node):
 
     def machine_states(self):
 
+        self.start_transition_timeout()
+
 
         # -------------------------------------
         #    ROS Input
@@ -340,7 +384,7 @@ if __name__ == '__main__':
     thread = threading.Thread(target=rclpy.spin, args=(node,), daemon=True)
     thread.start()
 
-    rate = node.create_rate(6)
+    rate = node.create_rate(10)
 
     try:
         while rclpy.ok():
