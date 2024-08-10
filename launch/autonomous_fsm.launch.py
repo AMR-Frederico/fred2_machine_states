@@ -44,7 +44,7 @@ def generate_launch_description():
         TimerAction(period= 1.5, actions= [
             
             LogInfo(msg=' ######################### LAUNCHING MACHINE STATES #################################### '), 
-            operation_modes_node,
+            # operation_modes_node,
             robot_states_node
 
         ])

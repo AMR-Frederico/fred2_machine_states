@@ -45,7 +45,7 @@ def generate_launch_description():
             
             LogInfo(msg=' ######################### LAUNCHING MACHINE STATES #################################### '), 
             operation_modes_node,
-            robot_states_node
+            # robot_states_node
 
         ])
     ])

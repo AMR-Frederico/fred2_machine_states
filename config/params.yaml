@@ -2,12 +2,22 @@
   ros__parameters:
 
     # Robot states 
-    emergency: 0                # Index for EMERGENCY state 
-    manual: 1                   # Index for MANUAL state 
-    autonomous: 2               # Index for AUTONOMOUS state 
-    in_goal: 3                  # Index for IN GOAL state 
-    mission_completed: 4        # Index for MISSION COMPLETED state 
-    
+    emergency: 0                 # Index for EMERGENCY state 
+    init: 10                     # Index for INIT state 
+    manual: 20                   # Index for MANUAL state 
+    autonomous: 30               # Index for AUTONOMOUS state 
+      
     # Debug/test 
     use_sim_time: false         # Use simulation time 
     debug: false                # Enable debug prints 
+
+/autonomous_state:
+  ros__parameters:
+
+    # Robot states 
+    init: 0                     
+    moving_to_goal: 10          
+    at_waypoint: 20             
+    at_ghost_waypoint: 30       
+    mission_accomplished: 40         
+    robot_stuck: 50        

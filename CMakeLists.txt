@@ -25,6 +25,9 @@ ament_python_install_package(${PROJECT_NAME})
 install(PROGRAMS
   fred2_machine_states/scripts/robot_states.py
   fred2_machine_states/scripts/operation_modes.py
+  fred2_machine_states/scripts/operation_modes_ros.py
+  fred2_machine_states/scripts/autonomous_state_machine.py
+  fred2_machine_states/scripts/autonomous_state_machine_ros.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
