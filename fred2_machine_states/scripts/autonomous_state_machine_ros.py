@@ -11,6 +11,7 @@ from rclpy.executors import SingleThreadedExecutor
 from rclpy.node import Node, ParameterDescriptor
 from rclpy.parameter import Parameter, ParameterType
 from rclpy.qos import QoSPresetProfiles, QoSProfile, QoSHistoryPolicy, QoSLivelinessPolicy, QoSReliabilityPolicy, QoSDurabilityPolicy
+from rclpy.signals import SignalHandlerOptions
 
 from rcl_interfaces.msg import SetParametersResult
 from rcl_interfaces.srv import GetParameters
@@ -410,7 +411,8 @@ class AutonomousStateMachineNode(Node):
 
 
 if __name__ == '__main__':
-    rclpy.init()
+
+    rclpy.init(args= None, signal_handler_options= SignalHandlerOptions.NO)
 
     # Create a custom context for single thread and real-time execution
     states_context = rclpy.Context()
@@ -433,7 +435,7 @@ if __name__ == '__main__':
     thread = threading.Thread(target=rclpy.spin, args=(node,), daemon=True)
     thread.start()
 
-    rate = node.create_rate(10)
+    rate = node.create_rate(10) 
 
     try:
         while rclpy.ok():
@@ -441,6 +443,8 @@ if __name__ == '__main__':
             rate.sleep()
 
     except KeyboardInterrupt:
+
+        node.get_logger().warn(' ------------------------------------ DEACTIVATING NODE --------------------------------------')
         pass
 
     rclpy.shutdown()
